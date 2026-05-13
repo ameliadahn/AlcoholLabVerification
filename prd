@@ -1,0 +1,463 @@
+Product Requirements Document (PRD)
+AI-Powered Alcohol Label Verification Prototype
+Prepared For: TTB Compliance Division Prototype Evaluation
+ Prepared By: Amelia Dahn
+ Project Type: Standalone Proof-of-Concept (POC)
+ Version: 2.0
+ Date: May 2026
+
+1. Executive Summary
+This project proposes a standalone AI-powered alcohol label verification application designed to assist TTB compliance agents in reviewing beverage labels against submitted application data.
+The prototype focuses on reducing repetitive manual verification work by automatically extracting information from alcohol label images and comparing it against structured application data. The system is intended to improve reviewer efficiency while maintaining human oversight for nuanced compliance decisions.
+The application is intentionally designed as a proof-of-concept and will not directly integrate with COLAs Online or internal TTB systems during this phase.
+The prototype demonstrates how OCR, AI-assisted parsing, and automated rule validation can modernize portions of the label review process while remaining practical for real-world government workflows.
+
+2. Problem Statement
+TTB compliance agents currently perform a largely manual review process for alcohol beverage labels. Reviewers visually inspect label artwork and compare required regulatory information against application forms.
+This workflow creates several operational challenges:
+High reviewer workload
+Repetitive manual verification tasks
+Processing bottlenecks during peak seasons
+Inconsistent review speed
+Limited scalability
+Reviewer fatigue
+Stakeholder interviews revealed that many reviews involve repetitive field matching rather than complex legal interpretation. Agents frequently spend time verifying:
+Brand names
+Alcohol content
+Net contents
+Government warnings
+Beverage classifications
+Bottler/importer information
+Previous modernization pilots failed largely due to poor performance and slow processing speeds. Reviewers indicated that any solution exceeding approximately five seconds per label would likely not be adopted.
+
+3. Product Vision
+Develop a lightweight, intuitive, AI-assisted review platform that:
+Processes labels rapidly
+Extracts mandatory label information automatically
+Validates compliance against TTB requirements
+Flags mismatches and formatting issues
+Supports human review workflows
+Handles both single and batch submissions
+Works reliably with imperfect label images
+The system should function as an intelligent assistant rather than a fully autonomous reviewer.
+
+4. Product Goals
+Primary Goals
+4.1 Reduce Manual Verification Time
+Automate repetitive field comparison tasks currently performed visually by agents.
+4.2 Improve Operational Throughput
+Allow reviewers to process larger application volumes during seasonal surges.
+4.3 Demonstrate AI Feasibility
+Show that modern OCR and AI technologies can provide practical value in TTB workflows.
+4.4 Maintain Human Oversight
+Support reviewer judgment rather than replacing compliance agents.
+4.5 Improve Error Visibility
+Clearly surface missing, malformed, or potentially noncompliant label information.
+
+5. Success Metrics
+Metric
+Target
+Average processing time
+Under 5 seconds
+OCR extraction accuracy
+95%+ on clean labels
+Warning statement detection accuracy
+95%+
+Batch upload support
+50+ labels
+Label field extraction accuracy
+95%+
+UI usability feedback
+Positive from technical and non-technical users
+
+
+6. Stakeholders & User Personas
+6.1 Senior Compliance Agents
+Characteristics:
+Experienced reviewers
+Lower technical comfort
+Skeptical of modernization initiatives
+Needs:
+Simplicity
+Reliability
+Clear outputs
+Minimal workflow disruption
+
+6.2 Junior Compliance Agents
+Characteristics:
+Technically comfortable
+Open to automation
+Interested in productivity improvements
+Needs:
+Fast workflows
+Efficient bulk review
+Detailed validation feedback
+
+6.3 Compliance Leadership
+Characteristics:
+Focused on throughput and modernization
+Interested in operational efficiencies
+Needs:
+Demonstrable productivity gains
+Scalable workflows
+Future modernization potential
+
+7. Regulatory Context & Label Requirements
+The application must validate distilled spirits labels against current U.S. Alcohol and Tobacco Tax and Trade Bureau (TTB) requirements. The purpose of this validation is to determine whether a submitted label would likely pass or fail compliance review before manual inspection. The system should not simply detect text; it must evaluate formatting, wording, placement, and required regulatory elements based on TTB labeling standards.
+Required Label Elements
+The system must verify the presence and correctness of the following mandatory label components:
+Brand Name
+Class/Type Designation
+Alcohol Content Statement
+Net Contents Statement
+Bottler/Importer Name & Address
+Government Health Warning Statement
+Country of Origin (if imported)
+
+Validation Rules & Pass/Fail Logic
+7.1 Brand Name Validation
+The label must contain a recognizable brand name.
+Passing Conditions
+Brand text is clearly readable through OCR
+Brand matches the submitted application data (case-insensitive)
+Brand appears in the same field of vision as the class/type and alcohol content
+Failing Conditions
+Brand is missing
+OCR confidence is too low to determine brand identity
+Brand does not match submitted application data
+Brand appears on a separate side of the bottle from alcohol content or class/type designation
+
+7.2 Class/Type Designation Validation
+The label must include a valid TTB-recognized distilled spirits classification such as:
+Vodka
+Whiskey
+Rum
+Gin
+Brandy
+Liqueur
+Passing Conditions
+A valid class/type designation is detected
+Text is readable and separate from decorative copy
+Appears in the same field of vision as brand name and ABV
+Failing Conditions
+Missing class/type
+Invalid or unrecognized designation
+Contradictory classifications
+Placement on a different label panel from brand or alcohol statement
+
+7.3 Alcohol Content Statement Validation
+TTB requires alcohol content to be displayed as a percentage alcohol by volume.
+Examples of valid formats:
+“40% Alc. by Vol.”
+“15.5% alcohol by volume”
+The abbreviation “ABV” alone is not permitted.
+Passing Conditions
+Contains a numeric percentage
+Includes “%”
+Includes “Alc.” / “Alcohol”
+Includes “Vol.” / “Volume”
+OCR confidence meets threshold
+Failing Conditions
+Uses “40 ABV”
+Missing percentage sign
+Missing “Alcohol” or “Volume” wording
+Numeric value unreadable or malformed
+Example
+PASS: “40% Alc. by Vol.”
+FAIL: “40 ABV”
+
+7.4 Net Contents Validation
+TTB requires net contents to be displayed in metric units.
+Examples:
+“750 mL”
+“1.75 L”
+Passing Conditions
+Numeric value present
+Metric unit present (“mL” or “L”)
+Formatting readable and properly associated with the numeric value
+Failing Conditions
+Missing unit
+Non-metric-only measurements
+OCR unable to identify value
+Example
+PASS: “750 mL”
+FAIL: “750”
+
+7.5 Bottler / Importer Name & Address Validation
+The label must include the responsible company name and location following qualifying phrases such as:
+“Bottled by”
+“Distilled by”
+“Imported by”
+Passing Conditions
+Qualifying phrase detected
+Company name present
+City and two-letter state abbreviation detected
+Text appears together as a single statement
+Failing Conditions
+Missing qualifier phrase
+Missing city or state
+Improper formatting
+Incomplete address information
+Example
+PASS: “Bottled by Bright Distillery, Boston, MA”
+FAIL: “Bright Distillery Boston”
+
+7.6 Government Warning Statement Validation
+The application must detect and validate the federally required Government Warning statement on distilled spirits labels. The system should compare OCR-extracted text against the standard TTB warning language and identify potential mismatches or missing sections.
+The required warning statement is:
+“GOVERNMENT WARNING: (1) According to the Surgeon General, women should not drink alcoholic beverages during pregnancy because of the risk of birth defects. (2) Consumption of alcoholic beverages impairs your ability to drive a car or operate machinery, and may cause health problems.”
+The application should validate:
+Presence of the warning statement
+Presence of both numbered warning sections
+Proper capitalization of “GOVERNMENT WARNING”
+Detection of major wording differences or missing text
+Passing Conditions
+Warning statement is detected
+Both required sections are present
+Text substantially matches the required wording
+OCR confidence is sufficient for validation
+Failing Conditions
+Warning statement missing
+One of the required sections missing
+Major wording changes or paraphrasing
+Improper capitalization of “GOVERNMENT WARNING”
+Because OCR may introduce small recognition errors, minor OCR inconsistencies should be flagged for manual review rather than automatic failure.
+Examples
+PASS:
+Exact required warning statement detected
+REVIEW REQUIRED:
+Minor OCR typo such as “GeneraI” instead of “General”
+FAIL:
+Missing pregnancy warning section
+“Government Warning” not capitalized
+Rewritten or shortened warning text
+
+7.7 Placement & Field-of-Vision Validation
+TTB requires the following elements to appear within the same field of vision:
+Brand Name
+Class/Type
+Alcohol Content
+The application must use OCR bounding boxes and positional analysis to approximate compliance.
+Passing Conditions
+Required elements appear visually grouped on the same label panel
+Failing Conditions
+Brand appears on front label while ABV appears only on back label
+Required fields separated across multiple panels
+
+7.8 OCR Confidence & Manual Review Rules
+Because OCR errors may occur, the application must include confidence scoring.
+System Behavior
+OCR confidence ≥ 85% → automatic validation allowed
+OCR confidence < 85% → flag for manual review
+Critical unreadable fields automatically fail validation
+Manual Review Triggers
+Ambiguous characters
+Partial text extraction
+Decorative fonts interfering with OCR
+Overlapping label graphics
+
+7.9 Validation Result Categories
+Each label must receive one of the following statuses:
+Status
+Meaning
+Pass
+All required label elements meet validation requirements
+Fail
+One or more mandatory TTB requirements violated
+Review Required
+OCR confidence too low or validation uncertain
+
+The UI should visually identify:
+Passed fields (green)
+Failed fields (red)
+Manual review fields (yellow)
+This allows compliance agents to quickly determine why a label passed or failed review.
+
+8. Scope
+In Scope
+Core Features
+Label image upload
+OCR text extraction
+AI-assisted field parsing
+Compliance validation
+Mismatch highlighting
+Batch processing
+Human review dashboard
+Confidence scoring
+Supported Inputs
+JPG
+PNG
+PDF
+Supported Validation Areas
+Brand name matching
+Alcohol content verification
+Government warning validation
+Net contents validation
+Beverage class/type extraction
+Bottler/importer information extraction
+
+Out of Scope
+Direct COLAs Online integration
+Production FedRAMP compliance
+Automated approvals
+Long-term document retention
+Identity management systems
+Full workflow replacement
+Production security hardening
+
+9. Functional Requirements
+9.1 Label Upload
+Users must be able to:
+Upload one or multiple label images
+Preview uploaded files
+Remove or replace uploads before processing
+
+9.2 OCR Text Extraction
+The system must:
+Detect and extract visible text
+Support imperfect images
+Handle rotated or angled labels
+Process glare and lighting variability where possible
+
+9.3 AI-Assisted Field Detection
+The application should identify:
+Brand names
+Beverage classifications
+Alcohol percentages
+Proof statements
+Net contents
+Bottler/importer details
+Government warning text
+
+9.4 Compliance Comparison Engine
+The system must compare extracted values against application form values and classify results as:
+Match
+Possible mismatch
+Missing information
+Formatting issue
+
+9.5 Warning Statement Validation
+The application must:
+Detect warning presence
+Compare wording exactly
+Validate capitalization patterns
+Flag altered or incomplete text
+
+9.6 Batch Processing
+Users must be able to:
+Upload multiple labels simultaneously
+View processing status
+Review results individually
+Sort or filter flagged labels
+
+9.7 Human Review Interface
+The interface should:
+Present side-by-side comparisons
+Highlight mismatches visually
+Show confidence scores
+Allow reviewer overrides
+
+10. Non-Functional Requirements
+Performance
+Typical labels processed in under 5 seconds
+Batch uploads processed asynchronously
+Usability
+Simple interface
+Minimal onboarding
+Accessible visual hierarchy
+Large, obvious action buttons
+Reliability
+Graceful OCR failure handling
+Clear retry flows
+Transparent validation outputs
+Compatibility
+Modern desktop browsers
+Government-network-friendly architecture
+Limited dependency on external APIs
+
+11. UX/UI Requirements
+Design Philosophy
+The interface should prioritize:
+Clarity
+Speed
+Simplicity
+Trustworthiness
+The application should avoid overwhelming users with excessive technical detail.
+
+Suggested Workflow
+Step 1
+Upload label(s)
+Step 2
+Enter or import application data
+Step 3
+Run AI verification
+Step 4
+Review comparison results
+Step 5
+Approve, flag, or escalate
+
+12. Recommended Technical Architecture
+Frontend
+React or Next.js
+TailwindCSS
+Backend
+FastAPI or Node.js
+OCR Layer
+Preferred:
+Tesseract OCR
+PaddleOCR
+Optional:
+Cloud OCR APIs if network access permits
+AI Layer
+NLP-assisted field parsing
+Regex validation
+Lightweight local inference models
+Deployment
+Azure-compatible architecture preferred
+Dockerized deployment recommended
+
+13. Risks & Mitigations
+Risk
+Mitigation
+Poor image quality
+Image preprocessing & confidence scores
+OCR inaccuracies
+Human review workflow
+Slow performance
+Lightweight local processing
+Government firewall restrictions
+Avoid dependency on cloud APIs
+Reviewer distrust
+Transparent validation logic
+False mismatches
+Confidence-based flagging
+
+
+14. Trade-Off Decisions
+Given prototype constraints:
+Fast response times are prioritized over perfect accuracy
+Human review is prioritized over full automation
+Simplicity is prioritized over feature complexity
+Local processing is preferred over cloud dependency
+Practical workflow utility is prioritized over enterprise scalability
+
+15. Future Opportunities
+Potential future enhancements include:
+COLAs Online integration
+Spatial “field of vision” validation
+Advanced image correction
+AI-assisted reviewer recommendations
+Historical analytics dashboards
+Reviewer productivity metrics
+Rule-engine support for beverage-specific requirements
+Enhanced support for wine and malt beverage regulations
+
+16. Conclusion
+This prototype aims to demonstrate that modern OCR and AI-assisted verification tools can substantially reduce repetitive manual work in alcohol label compliance review workflows.
+The application focuses on practical usability, rapid processing, transparent validation, and human-in-the-loop decision support rather than full automation.
+If successful, the prototype could help inform future TTB modernization initiatives and procurement decisions regarding AI-assisted compliance review systems.
+Relevant TTB References
+TTB Labeling Resources
+Distilled Spirits Labeling Guidance
+Mandatory Label Information Checklist
+

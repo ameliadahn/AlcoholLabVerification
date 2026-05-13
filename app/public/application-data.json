@@ -1,0 +1,230 @@
+[
+  {
+    "id": "blackHollowLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "Alcohol content is inconsistent across panels: the front label (panel 1) states 46% Alc./Vol. (92 Proof) while the back label (panel 2) states 40% Alc./Vol. (80 Proof). These values directly contradict each other, which is a TTB compliance failure. Additionally, the cap label (panel 5) misspells the distillery name as 'BLACK HOLLOM DISTILLING CO.' instead of 'BLACK HOLLOW DISTILLING CO.'",
+    "applicationData": {
+      "brandName": "Black Hollow",
+      "classType": "Straight Bourbon Whiskey",
+      "alcoholContent": "46% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Bardstown",
+      "bottlerState": "KY",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "greenMeadowLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "The government warning on the back label (panel 2) is intentionally blurred and illegible, failing the TTB mandatory legibility requirement under 27 CFR 16.21 — the warning must be clearly readable as printed. Additionally, the back label misspells the bottler name as 'GREENNEADOW DISTILLING CO.' (extra N) instead of 'GREENMEADOW DISTILLING CO.', which does not match the filed application data.",
+    "applicationData": {
+      "brandName": "Greenmeadow",
+      "classType": "Gin",
+      "alcoholContent": "47% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Portland",
+      "bottlerState": "OR",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "pineRidgeLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all five panels. The back label (panel 2) displays the government warning in all-capitals with both required sections fully legible. The bottler statement reads 'Distilled and Bottled By Pine Ridge Distilling Co., Bardstown, Kentucky'. Alcohol content is consistent at 45% Alc./Vol. across all panels. Net contents in metric units (750 mL). No prohibited claims detected.",
+    "applicationData": {
+      "brandName": "Pine Ridge Distilling Co.",
+      "classType": "Kentucky Straight Bourbon Whiskey",
+      "alcoholContent": "45% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Bardstown",
+      "bottlerState": "KY",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "glacierPeakLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all four panels. The back label (panel 2) displays the government warning in all-capitals with both required sections fully legible. The bottler statement reads 'Distilled and Bottled By Glacier Peak Spirits, LLC, Lewiston, Idaho'. Alcohol content is consistent at 40% Alc./Vol. across all panels. Net contents in metric units (750 mL). No prohibited claims detected.",
+    "applicationData": {
+      "brandName": "Glacier Peak",
+      "classType": "Vodka",
+      "alcoholContent": "40% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Lewiston",
+      "bottlerState": "ID",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "islandEscapeLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all four panels. The back panel displays the government warning in all-capitals with both required sections fully legible. The producer statement reads 'Produced and Canned By Island Escape Spirits Co., San Diego, California'. Alcohol content is stated as 7.0% Alc./Vol. Net contents in metric units (355 mL). A full ingredients list is present on a dedicated side panel. The 'Gluten Free' claim is permissible under TTB Ruling 2014-2. No prohibited claims detected.",
+    "applicationData": {
+      "brandName": "Island Escape",
+      "classType": "Pineapple Rum Punch",
+      "alcoholContent": "7.0% Alc./Vol.",
+      "netContents": "355 mL",
+      "bottlerCity": "San Diego",
+      "bottlerState": "CA",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  }
+  ,
+  {
+    "id": "elevateLabel",
+    "expectedResult": "review",
+    "reasonForResult": "The front label (panel 1) displays the claim 'The World's Smoothest Gin™', which is an unsubstantiated superlative that cannot be objectively proven. This falls under TTB's UNVERIFIABLE/MISLEADING QUALITY prohibited claim category — claims such as 'World's Best', 'Smoothest', or 'Greatest' without a named, verifiable award or certification require manual TTB review. All other mandatory elements are present and correctly formatted: the government warning appears with the required 'GOVERNMENT WARNING:' header and both sections on the back label, the bottler statement includes a qualifying verb, company name, city, and state, and alcohol content (42% Alc./Vol.) and net contents (750 mL) are consistent across all panels.",
+    "applicationData": {
+      "brandName": "Elevate",
+      "classType": "Gin",
+      "alcoholContent": "42% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Denver",
+      "bottlerState": "CO",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "northCoastLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across both panels. The back label displays the government warning with the required 'GOVERNMENT WARNING:' header and both required sections fully legible. The bottler statement reads 'Distilled and Bottled By North Coast Spirits, LLC, Seattle, Washington', including the required qualifying verb, company name, city, and state. Alcohol content is clearly stated as 40% Alc./Vol. and net contents are in metric units (750 mL). 'Five Times Distilled for Exceptional Purity' is a factual production process claim and does not constitute a prohibited claim. No unverifiable superlatives or health claims detected.",
+    "applicationData": {
+      "brandName": "North Coast",
+      "classType": "Vodka",
+      "alcoholContent": "40% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Seattle",
+      "bottlerState": "WA",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  }
+  ,
+  {
+    "id": "sunsetVibesLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "Multiple critical TTB violations found across both panels: (1) No alcohol content (ABV) statement appears anywhere on the label — the Nutrition Facts panel is present but omits the required '% Alc. by Vol.' declaration, which is mandatory for all alcohol beverages. (2) The mandatory Government Warning (27 CFR 16.21) is completely absent from both panels. (3) The label contains numerous prohibited health and therapeutic claims in direct violation of TTB Notice 884 (2012): 'BOOSTS ENERGY', 'BUILDS IMMUNITY', 'BURNS CALORIES', 'GOOD FOR YOUR HEART', 'IMPROVES FOCUS', 'PROMOTES WELLNESS', 'LIVE BOLDER. FEEL BETTER.', and 'Why just relax when you can THRIVE?' — all imply health benefits, therapeutic effects, or wellness outcomes from consuming an alcohol beverage, which is expressly prohibited. The cap (panel 2) adds 'POSITIVE ENERGY IN EVERY SIP', a further implied health benefit claim.",
+    "applicationData": {
+      "brandName": "Sunset Vibes",
+      "classType": "Hard Seltzer",
+      "alcoholContent": "10% Alc. by Vol.",
+      "netContents": "355 mL",
+      "bottlerCity": "Miami",
+      "bottlerState": "FL",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  },
+  {
+    "id": "highlandLegacyLabel",
+    "expectedResult": "review",
+    "reasonForResult": "The front label displays 'ULTRA PREMIUM' and 'SIPPED BY CONNOISSEURS WORLDWIDE', both of which are unsubstantiated superlatives that cannot be objectively proven, falling under TTB's UNVERIFIABLE/MISLEADING QUALITY restricted claim category.",
+    "applicationData": {
+      "brandName": "Highland Legacy",
+      "classType": "Bourbon Whiskey",
+      "alcoholContent": "45% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Seattle",
+      "bottlerState": "WA",
+      "isImported": false,
+      "countryOfOrigin": ""
+    }
+  }
+  ,
+  {
+    "id": "bellaVistaLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "Three violations found across the six panels: (1) PROHIBITED HEALTH CLAIM — 'BOOSTS HEART HEALTH' on the front label is a direct health/therapeutic claim expressly prohibited under TTB Notice 884 (2012), which bars any claim implying a health benefit from consuming an alcohol beverage. (2) UNVERIFIABLE QUALITY CLAIM — 'AWARD WINNING TASTE' is an unsubstantiated superlative; no specific named award or competition is cited, making it an unverifiable quality claim per TTB prohibited claim policy. (3) ORGANIC CLAIM WITHOUT CERTIFICATION — 'MADE WITH ORGANIC GRAPES' is a prohibited organic claim under TTB regulations unless accompanied by valid USDA/AMS certification documentation. The government warning is present with both required sections, the importer statement is present (Vino Imports USA, Napa, CA), and country of origin is stated as Product of Italy.",
+    "applicationData": {
+      "brandName": "Bella Vista",
+      "classType": "Toscana Rosso",
+      "alcoholContent": "13.5% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Napa",
+      "bottlerState": "CA",
+      "isImported": true,
+      "countryOfOrigin": "Italy"
+    }
+  },
+  {
+    "id": "sierraVerdeLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "Only one panel was submitted (a full bottle photo showing only the front). No back label is present in the submission, meaning the mandatory Government Warning (27 CFR 16.21) is completely absent across all submitted panels. For an imported tequila, a visible importer statement is also required and is not legible on the submitted panel.",
+    "applicationData": {
+      "brandName": "Sierra Verde",
+      "classType": "Tequila Blanco",
+      "alcoholContent": "40% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "New York",
+      "bottlerState": "NY",
+      "isImported": true,
+      "countryOfOrigin": "Mexico"
+    }
+  },
+  {
+    "id": "soleterraLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "Two violations found across the two submitted panels: (1) ILLEGIBLE BACK LABEL — The back label is entirely blurred and unreadable across the full extent of its text. The mandatory Government Warning (27 CFR 16.21) is present but completely illegible, violating the TTB legibility requirement that all mandatory statements must be clearly readable as printed. The importer statement and all other back-label information are similarly unreadable. (2) NON-ENGLISH COUNTRY OF ORIGIN — The front of the bottle displays 'PRODOTTO IN ITALIA' (Italian), rather than the English-language 'Product of Italy' required by CBP regulations for the US market. No English-language country of origin statement appears on any submitted panel.",
+    "applicationData": {
+      "brandName": "Soléterra",
+      "classType": "Toscana Rosso",
+      "alcoholContent": "13.5% Alc. by Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Miami",
+      "bottlerState": "FL",
+      "isImported": true,
+      "countryOfOrigin": "Italy"
+    }
+  },
+  {
+    "id": "vivereGrandeLabel",
+    "expectedResult": "fail",
+    "reasonForResult": "One critical violation found: EXCESSIVE DRINKING PROMOTION — The front label prominently displays 'LIVE BIG. DRINK MORE. MAKE EVERY NIGHT EPIC.' This constitutes a prohibited excessive drinking claim under TTB labeling regulations. The phrase 'DRINK MORE' explicitly encourages increased alcohol consumption, and the combination with 'MAKE EVERY NIGHT EPIC' promotes a pattern of regular excessive drinking, both of which are expressly prohibited. All other mandatory elements are present and correctly formatted: the government warning appears with both required sections, the importer statement reads 'Imported by Vivere Imports, LLC, Miami, FL 33131', country of origin is 'Product of Italy', alcohol content is 'ALC. 13.5% BY VOL.', net contents are 750 mL, and sulfites disclosure is present.",
+    "applicationData": {
+      "brandName": "Vivere Grande",
+      "classType": "Toscana IGT",
+      "alcoholContent": "13.5% Alc. by Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Miami",
+      "bottlerState": "FL",
+      "isImported": true,
+      "countryOfOrigin": "Italy"
+    }
+  },
+  {
+    "id": "chateauLaRocheLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all four panels. The back label displays the government warning with the required 'GOVERNMENT WARNING:' header and both required sections fully legible. The import label provides the required English-language importer statement ('Imported by Vinum Imports, Inc., New York, NY 10016') and country of origin ('Product of France'), satisfying TTB/CBP requirements for imported wine. The back label also states class/type as 'Red Bordeaux Wine', alcohol content as 'ALC. 13.5% BY VOL.', net contents as 750 mL, and includes the required sulfites disclosure. The French-language text on the front label ('Produit de France') and the French producer statement on the back are supplemented by the English-language import label, which is standard practice for imported wines. No prohibited claims detected.",
+    "applicationData": {
+      "brandName": "Château La Roche",
+      "classType": "Bordeaux",
+      "alcoholContent": "13.5% Alc. by Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "New York",
+      "bottlerState": "NY",
+      "isImported": true,
+      "countryOfOrigin": "France"
+    }
+  },
+  {
+    "id": "highlandMistLabel",
+    "expectedResult": "pass",
+    "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all three panels. The back label displays the government warning with the required 'GOVERNMENT WARNING:' header and both required sections fully legible. The importer statement reads 'Imported by Summit Spirits USA, Inc., Deerfield, IL 60015' with the required qualifying verb, company name, city, and state. Country of origin is stated as 'Product of Scotland'. The full bottle panel confirms class/type as 'Blended Scotch Whisky', alcohol content as '40% Alc./Vol. (80 Proof)', and net contents as 750 mL. The neck label reinforces 'Imported' and 'Product of Scotland'. No prohibited claims detected.",
+    "applicationData": {
+      "brandName": "Highland Mist",
+      "classType": "Blended Scotch Whisky",
+      "alcoholContent": "40% Alc./Vol.",
+      "netContents": "750 mL",
+      "bottlerCity": "Deerfield",
+      "bottlerState": "IL",
+      "isImported": true,
+      "countryOfOrigin": "Scotland"
+    }
+  }
+]
