@@ -216,14 +216,17 @@ export async function processSubmission(
 
     if (aiWarningLegible && aiWarningText) {
       // Anti-hallucination check: verify OCR can find at least one distinctive
-      // anchor word from the government warning on the identified panel.
-      // "surgeon", "impairs", and "birth" are unique to the required warning text —
-      // if OCR finds none of them, the AI almost certainly returned the standard
-      // wording from memory rather than reading it from the image pixels.
-      const anchorWords = ["surgeon", "impairs", "birth"];
-      const checkOcrs = panelIndex !== null ? [allOcrResults[panelIndex]] : allOcrResults;
-      const combinedOcrText = checkOcrs.map((r) => r.text).join(" ").toLowerCase();
-      const ocrConfirmsWarning = anchorWords.some((w) => combinedOcrText.includes(w));
+      // anchor word from the government warning text across ALL panels.
+      // We check all panels (not just the identified one) because:
+      //   a) Claude's panel ID can be off by one
+      //   b) Tesseract may fail on one panel's font/size but succeed on another
+      // A label with no government warning at all will have none of these words
+      // anywhere — that's the hallucination signal we're catching.
+      // "pregnancy" and "impairs" are the most distinctive; "surgeon" and "birth"
+      // provide additional coverage for labels where one word is OCR-garbled.
+      const anchorWords = ["surgeon", "impairs", "birth", "pregnancy"];
+      const allPanelsOcrText = allOcrResults.map((r) => r.text).join(" ").toLowerCase();
+      const ocrConfirmsWarning = anchorWords.some((w) => allPanelsOcrText.includes(w));
 
       if (ocrConfirmsWarning) {
         // OCR independently found warning anchor words — AI extraction is trustworthy.
@@ -231,15 +234,15 @@ export async function processSubmission(
         warningLegible = true;
         warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
       } else {
-        // OCR found none of the government warning anchor words on the panel Claude
-        // identified. Fall back to the OCR extraction path — this will produce null
-        // if the warning is genuinely unreadable, correctly failing the field.
-        const ocrPanelText = panelIndex !== null
-          ? allOcrResults[panelIndex].text
-          : allOcrResults.map((r) => r.text).join("\n");
-        warningText = extractGovernmentWarning(ocrPanelText);
+        // OCR found none of the government warning anchor words on any panel.
+        // This strongly suggests the AI hallucinated — fall back to OCR extraction
+        // across all panels, which will produce null if the warning is genuinely absent.
+        const allOcrText = allOcrResults
+          .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
+          .join("\n\n");
+        warningText = extractGovernmentWarning(allOcrText);
         warningLegible = undefined;
-        warningConf = scoreOcrWarningConfidence(warningText, checkOcrs);
+        warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
       }
     } else {
       // AI couldn't read it (fine print too small) — fall back to Tesseract OCR.

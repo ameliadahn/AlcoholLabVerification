@@ -272,21 +272,28 @@ export function extractGovernmentWarning(text: string): string | null {
   const match = normalised.match(GOV_WARNING_REGEX);
   if (match) return match[0].trim();
 
-  // Fallback 1: "GOVERNMENT WARNING" is present — grab a generous 500-char window.
-  // 500 chars covers the full required wording (≈ 360 chars) with room for OCR noise.
+  // Truncate at "health problems" — anything after this phrase is not part of
+  // the required warning (e.g. "CONTAINS SULFITES", bottler address, barcodes).
+  const truncateAtHealthProblems = (s: string, start: number): string => {
+    const window = s.substring(start, Math.min(s.length, start + 600));
+    const stopMatch = window.match(/health\s+problems\.?/i);
+    const end = stopMatch && stopMatch.index !== undefined
+      ? stopMatch.index + stopMatch[0].length
+      : window.length;
+    return window.substring(0, end).trim();
+  };
+
+  // Fallback 1: "GOVERNMENT WARNING" is present — grab up to "health problems."
   const gwIdx = normalised.toUpperCase().indexOf("GOVERNMENT WARNING");
   if (gwIdx !== -1) {
-    return normalised.substring(gwIdx, Math.min(normalised.length, gwIdx + 500)).trim();
+    return truncateAtHealthProblems(normalised, gwIdx);
   }
 
   // Fallback 2: OCR split the header across lines or garbled it beyond the fixes above.
   // Look for "GOVT WARNING", "GOV. WARNING", "GOVERNMENT WARN" etc.
   const fuzzyMatch = normalised.match(/GOV(?:ERN(?:MENT)?)?\.?\s+WARN(?:ING)?/i);
   if (fuzzyMatch && fuzzyMatch.index !== undefined) {
-    return normalised.substring(
-      fuzzyMatch.index,
-      Math.min(normalised.length, fuzzyMatch.index + 500)
-    ).trim();
+    return truncateAtHealthProblems(normalised, fuzzyMatch.index);
   }
 
   return null;
