@@ -23,21 +23,19 @@ export interface BatchStats {
   review: number;
 }
 
-// GPT-4o with detail:"high" consumes ~10k input tokens per label.
-// At concurrency=2: 2 × 10k = 20k TPM — comfortably under Tier 1's 30k limit
-// so no throttling occurs and every label runs at its true ~6-8 s speed.
-// At concurrency=4: 4 × 10k = 40k TPM — exceeds Tier 1, causing OpenAI to
-// soft-throttle requests for 40-50 s without returning a 429.  The result is
-// slower overall than concurrency=2 even though more slots are open.
-const DEFAULT_CONCURRENCY = 10;
+// Claude Haiku (with prompt caching) consumes ~3,500 fresh input tokens per label
+// (images + user text) once the 6,700-token system prompt is cached.
+// Anthropic Tier 1 limit is 100,000 TPM.
+// At concurrency=7: 7 × ~12k uncached tokens = ~84k TPM — safely under the cap.
+// At concurrency=10: 10 × ~12k = ~120k TPM — exceeds Tier 1, causing hard 429s
+// that trigger the RATE_LIMIT_WAIT_MS delay and inflate total batch time.
+const DEFAULT_CONCURRENCY = 7;
 
-// Stagger between slot releases (ms).  A short stagger prevents both requests
-// from hitting the OpenAI API at the exact same millisecond.
+// Stagger between slot releases (ms).  Prevents a burst of simultaneous requests.
 const SLOT_STAGGER_MS = 500;
 
-// When OpenAI returns a hard 429 rate-limit error, wait this long before
-// retrying.  20 s is enough for the per-minute token bucket to partially
-// refill; with concurrency=2 hard 429s should be rare.
+// When Anthropic returns a hard 429 rate-limit error, wait this long before
+// retrying.  20 s is enough for the per-minute token bucket to partially refill.
 const RATE_LIMIT_WAIT_MS = 20_000;
 
 // Maximum number of automatic rate-limit retries per submission.

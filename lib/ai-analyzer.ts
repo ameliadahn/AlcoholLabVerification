@@ -1,17 +1,17 @@
 /**
- * AI Label Analyzer — GPT-4o Vision
+ * AI Label Analyzer — Claude Haiku Vision
  *
- * Sends all label panels (front, back, neck, cap, etc.) to GPT-4o in a single
+ * Sends all label panels (front, back, neck, cap, etc.) to Claude in a single
  * call and receives back all extracted TTB-required fields in structured JSON.
  * Analyzing all panels together allows the model to find required elements
  * that may be distributed across multiple surfaces (e.g. government warning
  * on back, brand name on front, bottler statement on side).
  *
  * This runs server-side only (called from the /api/analyze route) so the
- * OPENAI_API_KEY is never exposed to the browser.
+ * ANTHROPIC_API_KEY is never exposed to the browser.
  */
 
-import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import { ApplicationData } from "./types";
 
 const SYSTEM_PROMPT = `You are a TTB (Alcohol and Tobacco Tax and Trade Bureau) label compliance reviewer. Your authority comes from the Federal Alcohol Administration (FAA) Act (27 U.S.C. §§201–214) and TTB labeling regulations (27 CFR Parts 4, 5, and 7).
@@ -69,7 +69,6 @@ This includes: direct benefit claims, wellness framing, and dietary/medical lang
   ❌ "Perfect recovery drink" — implies therapeutic recovery value
   ❌ "Cleansing," "Detoxifying," "Restorative," "Revitalizing" — wellness/therapeutic framing
   ❌ "Vitamin-enriched," "Nutritious," "Enriched with antioxidants" — dietary health claims
-  Rule: If a reasonable consumer could read the phrase and think the product has a health or wellness benefit, flag it.
 
 [INTOXICATION/EXCESSIVE DRINKING|FAIL]
 Any language that encourages, glamorizes, or promotes irresponsible drinking, dangerous overconsumption, or intoxication.
@@ -78,7 +77,6 @@ Any language that encourages, glamorizes, or promotes irresponsible drinking, da
   ❌ "Get Wasted Fast" / "Guaranteed Buzz" — promotes intoxication as the goal
   ❌ "Hits harder" / "Gets you there faster" / "More intense buzz" — promotes intoxication speed/intensity
   ❌ "Party Fuel" — frames the product as a tool for binge-drinking
-  Rule: If a reasonable consumer could read the phrase and think it is encouraging them to drink irresponsibly, flag it.
 
 [ORGANIC WITHOUT CERTIFICATION|FAIL]
 "Organic" or "made with organic [ingredient]" anywhere on the label without a USDA/AMS certifying agent and certificate number visibly cited.
@@ -99,26 +97,17 @@ REVIEW SEVERITY — requires human verification
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [MISLEADING QUALITY CLAIM|REVIEW]
-Absolute superlatives or exaggerated quality claims that assert objective superiority but cannot be verified.
-  ❌ "World's Smoothest Bourbon" — absolute quality claim, unverifiable
-  ❌ "Best Whiskey Ever Made" — absolute superlative, no basis
+Absolute superlatives or exaggerated quality claims that assert objective superiority without a verifiable source.
+  ❌ "World's Smoothest Bourbon" — absolute quality superlative, unverifiable
   ❌ "Perfect Every Time" — absolute performance claim
-  ❌ "The Finest Spirit on Earth" — absolute quality superlative
-  ✅ "Exceptionally smooth" — subjective sensory descriptor, OK
-  ✅ "Our finest blend" — relative/subjective, OK
-  Rule: A claim is REVIEW if it asserts a specific, objective #1 or "best" status without a named, verifiable source.
+  ✅ "Exceptionally smooth" / "Our finest blend" — subjective/relative, not an absolute assertion — do NOT flag
 
 [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]
-Any award, medal, ranking, recognition, or accolade claim that does not name a specific, identifiable competition, awarding body, and ideally a year. The claim must be truthful, supportable, and correctly attributed — if any of those three are missing or cannot be confirmed from the label alone, flag it.
-  ❌ "Gold Medal Winner" — award claim with no named competition or year
-  ❌ "Award Winning Bourbon" — award claim with no named award, source, or year
-  ❌ "Award-Winning Gin" — too vague, cannot be verified
-  ❌ "Awarded #1 Vodka in America" — ranking claim with no named competition
-  ❌ "Critically Acclaimed" — recognition claim with no source
-  ❌ "Top Rated" / "Highly Rated" — rating claim with no named publication or source
-  ✅ "2023 San Francisco World Spirits Competition Double Gold" — specific competition, year, and medal level — do NOT flag
-  ✅ "Whisky Advocate 95 Points" — specific named publication and score — do NOT flag
-  Rule: If a consumer cannot look up the specific award from the information on the label alone, flag it at REVIEW.
+Any award, medal, ranking, or accolade claim that does not name a specific identifiable competition/awarding body and year.
+  ❌ "Gold Medal Winner" — no named competition or year
+  ❌ "Award Winning Bourbon" — no named award, source, or year
+  ❌ "Critically Acclaimed" / "Top Rated" — no named source
+  ✅ "2023 San Francisco World Spirits Competition Double Gold" — specific, verifiable — do NOT flag
 
 [MISLEADING HEALTH IMPLICATION|REVIEW]
 Language that stops short of an explicit health claim but strongly implies a wellness, dietary, or lifestyle benefit.
@@ -126,7 +115,6 @@ Language that stops short of an explicit health claim but strongly implies a wel
   ❌ "The clean spirit" — implies health/purity benefit beyond flavor
   ❌ "Better for you" / "The healthy way to celebrate" — implies health benefit
   ❌ "Fits your active lifestyle" — implies compatibility with healthy living
-  Rule: Ask — would a health-conscious consumer read this as a wellness claim? If yes, flag it.
 
 [MISLEADING OVERALL IMPRESSION|REVIEW]
 Even when no single statement is prohibited, the COMBINATION of elements on the label may collectively imply a health or wellness benefit and mislead a reasonable consumer.
@@ -184,11 +172,6 @@ EXTRACTION RULES
    - 50–74: Field has genuine legibility problems even on its best available panel — blur, damage, or obstruction.
    - Below 50: Field is substantially unreadable across all submitted panels.
 
-   Examples of differentiated scoring (do not copy these numbers — evaluate the actual images):
-   - Large brand name crystal clear, government warning text tiny/blurry → brandName: 95, governmentWarning: 45
-   - Front label sharp but back label slightly tilted → brandName: 97, bottlerStatement: 78
-   - All panels are high-quality flat scans → scores may still vary 85–97 based on font size and print quality
-
    CRITICAL — DO NOT UNDER-SCORE CLEAR LABELS: For a professionally printed flat label scan where text is sharp, well-lit, and every character is readable, the confidence MUST be 90 or above. Scores below 80 are only appropriate when there is a real legibility problem (blur, shadow, damage, very small text). Do not assign a low score as a precaution or out of caution when the label is clearly readable — that is a scoring error that causes good labels to be incorrectly flagged for review.
 
    A critical scoring error is returning a low overall confidence because a staged bottle photograph is blurry while a crisp flat label scan of the same label is also in the submission.
@@ -232,17 +215,7 @@ A foreign-language origin phrase (e.g. "PRODOTTO IN ITALIA", "Produit de France"
   ✓ Right: "countryOfOrigin": null, analysisNotes: "Non-English origin statement found: 'PRODOTTO IN ITALIA' — English-language country of origin required by CBP; null returned."
 
 D. PROCESS CLAIMS, SENSORY CLAIMS, AND AWARD CLAIMS — calibrate carefully
-Routine production and sensory language is standard industry practice and must NOT be flagged. Only flag claims that make a specific assertion requiring external verification.
-
-  Do NOT flag — standard production/sensory language:
-    "Small Batch" → do not flag — common production descriptor
-    "Distilled 5 Times" → do not flag — factual production process statement
-    "Handcrafted in Kentucky" → do not flag — production descriptor
-    "Aged 12 Years in American Oak" → do not flag — factual aging statement
-    "Exceptional clarity and a smooth, clean finish" → do not flag — sensory descriptor
-    "Exceptional Purity" → do not flag — standard sensory/distillation quality descriptor
-    "Pure" / "Purity" (standalone) → do not flag — describes distillation quality, not a health benefit
-    "Ultra Premium" → do not flag — general quality adjective, no specific claim
+Routine production and sensory language is standard industry practice and must NOT be flagged (see DO NOT FLAG list above). Only flag claims that make a specific assertion requiring external verification.
 
   Flag for REVIEW — unverifiable award or ranking claims:
     [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]: "Awarded #1 Vodka in America" — award claim with no named competition
@@ -259,54 +232,48 @@ When the brand name and class/type designation appear together on the same line 
   ✗ Wrong: "brandName": "ELEVATE GIN", "classType": null
   ✓ Right: "brandName": "ELEVATE", "classType": "GIN"
 
-F. GOVERNMENT WARNING HEADER IN MIXED CASE — return null
-The header "GOVERNMENT WARNING:" must appear in ALL CAPITALS per 27 CFR 16.21. If the header is in mixed case ("Government Warning:" or "government warning:"), return null and note the capitalization issue.
-  ✗ Wrong: "governmentWarning": "Government Warning: (1)..." ← accepted despite wrong capitalization
-  ✓ Right: "governmentWarning": null, analysisNotes: "Warning header found as 'Government Warning:' — header must be in all capitals per 27 CFR 16.21; null returned."
-
-G. PROHIBITED CLAIMS — calibration examples
-
-  FAIL:
-  "Heart Healthy" → [HEALTH/THERAPEUTIC|FAIL] — implies cardiovascular benefit
-  "Good for Stress Relief" → [HEALTH/THERAPEUTIC|FAIL] — implies therapeutic value
-  "Perfect Recovery Drink" → [HEALTH/THERAPEUTIC|FAIL] — implies therapeutic recovery benefit
-  "Hangover-Free" → [HEALTH/THERAPEUTIC|FAIL] — implies reduced harm from alcohol
-  "Drink All Night" → [INTOXICATION/EXCESSIVE DRINKING|FAIL] — promotes unsafe sustained consumption
-  "Get Wasted Fast" → [INTOXICATION/EXCESSIVE DRINKING|FAIL] — promotes rapid intoxication
-  "Party Fuel" → [INTOXICATION/EXCESSIVE DRINKING|FAIL] — frames product as a binge-drinking tool
-  "Made with Organic Grapes" (no certifier cited) → [ORGANIC WITHOUT CERTIFICATION|FAIL]
-
-  REVIEW:
-  "World's Smoothest Bourbon" → [MISLEADING QUALITY CLAIM|REVIEW] — absolute quality superlative, unverifiable
-  "Best Whiskey Ever Made" → [MISLEADING QUALITY CLAIM|REVIEW] — absolute superlative, no basis
-  "Perfect Every Time" → [MISLEADING QUALITY CLAIM|REVIEW] — absolute performance claim
-  "Gold Medal Winner" → [UNVERIFIABLE AWARD/RECOGNITION|REVIEW] — award claim, no named competition or year
-  "Award Winning Bourbon" → [UNVERIFIABLE AWARD/RECOGNITION|REVIEW] — award claim, no named award or source
-  "Awarded #1 Vodka in America" → [UNVERIFIABLE AWARD/RECOGNITION|REVIEW] — no named competition
-  "The guilt-free spirit" → [MISLEADING HEALTH IMPLICATION|REVIEW] — implies a healthier choice
-  "Fits your active lifestyle" → [MISLEADING HEALTH IMPLICATION|REVIEW] — implies health/fitness compatibility
-  "Only 80 Calories" (no analysis panel) → [MISLEADING NUTRIENT|REVIEW]
-
-  Do NOT flag:
-  "Small Batch" → production descriptor
-  "Distilled 5 Times" → factual production process statement
-  "Smooth, clean finish" → sensory flavor descriptor
-  "Exceptional clarity" → sensory descriptor
-  "Exceptional Purity" → sensory/distillation quality descriptor, not a health claim
-  "Pure" / "Purity" (standalone) → distillation quality descriptor, not a health claim
-  "Ultra Premium" → subjective quality adjective
-  "Exceptionally smooth" → sensory descriptor, not an absolute claim
-  "Your Mom's Favorite Vodka" → fanciful/humorous, no objective claim
-  "Handcrafted in Colorado" (for a Colorado product) → truthful production statement
-  "2023 San Francisco World Spirits Competition Gold Medal" → specific verifiable award, do NOT flag
-
-H. ALCOHOL CONTENT AS PROOF ONLY — extract verbatim, do not convert
+F. ALCOHOL CONTENT AS PROOF ONLY — extract verbatim, do not convert
 If the label states only "80 Proof" or "100 PROOF" with no percentage, extract it verbatim. Do NOT calculate or infer the equivalent ABV percentage. Compliance format checking is handled downstream.
   ✗ Wrong: "alcoholContent": "40% Alc./Vol." ← calculated from proof number
   ✓ Right: "alcoholContent": "80 Proof"
 
 I. IMPORT LABEL STICKER ON A FOREIGN BOTTLE — treat as a valid panel
-A foreign-language bottle with a separate English-language import sticker is standard practice for imported products. Treat the import sticker as a full label panel. The government warning, importer statement, and country of origin on the sticker satisfy TTB/CBP requirements even if the bottle's main label is entirely in a foreign language. Extract all required fields from whichever panel they appear on.`;
+A foreign-language bottle with a separate English-language import sticker is standard practice for imported products. Treat the import sticker as a full label panel. The government warning, importer statement, and country of origin on the sticker satisfy TTB/CBP requirements even if the bottle's main label is entirely in a foreign language. Extract all required fields from whichever panel they appear on.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT FORMAT
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Return ONLY a valid JSON object with this exact structure:
+{
+  "rawText": "<all visible text from the label images, verbatim, in reading order — use ONLY '--- [Panel 1] ---', '--- [Panel 2] ---', etc. as separators; no filenames, no extra text in separators>",
+  "confidence": <integer 0–100: your overall quality assessment of the submission — a general impression of how clearly the label text is readable across all panels>,
+  "fieldConfidences": {
+    "brandName": <0–100: readability of the brand name text on its clearest panel>,
+    "classType": <0–100: readability of the class/type designation>,
+    "alcoholContent": <0–100: readability of the alcohol content statement>,
+    "netContents": <0–100: readability of the net contents statement>,
+    "bottlerStatement": <0–100: readability of the bottler/importer name and address>,
+    "governmentWarning": 0,
+    "countryOfOrigin": <0–100: readability of the country of origin statement; use 100 for domestic products where it is not required>,
+    "prohibitedClaims": <0–100: confidence that all marketing claims have been screened — lower if some text was unclear>
+  },
+  "extractedFields": {
+    "brandName": "<brand name exactly as printed, or null>",
+    "classType": "<full class/type designation exactly as printed including all modifiers, or null>",
+    "alcoholContent": "<alcohol content statement exactly as printed (e.g. '40% Alc. by Vol.' or '40 ABV'), or null>",
+    "netContents": "<net contents exactly as printed (e.g. '750 mL' or '750'), or null>",
+    "bottlerStatement": "<full bottler/importer/brewer statement exactly as printed including qualifying verb and city/state, or null>",
+    "governmentWarning": null,
+    "governmentWarningLegible": false,
+    "governmentWarningPanel": <1-indexed panel number where the "GOVERNMENT WARNING:" fine-print block is located, or null if not found on any panel>,
+    "countryOfOrigin": "<country of origin exactly as printed for imported products (e.g. 'PRODUCT OF ENGLAND'), or null>",
+    "prohibitedClaims": "<pipe-separated list of ALL detected violations across ALL panels in format '[CATEGORY|SEVERITY]: \\"exact claim text\\" — reason'; CATEGORY is one of HEALTH/THERAPEUTIC, INTOXICATION/EXCESSIVE DRINKING, ORGANIC WITHOUT CERTIFICATION, FALSE GEOGRAPHIC/PRODUCTION, OBSCENE/OFFENSIVE/ILLEGAL, MISLEADING QUALITY CLAIM, UNVERIFIABLE AWARD/RECOGNITION, MISLEADING HEALTH IMPLICATION, MISLEADING OVERALL IMPRESSION, MISLEADING NUTRIENT; SEVERITY is FAIL or REVIEW; null if none detected after scanning all panels>"
+  },
+  "analysisNotes": "<note image quality issues, partially obscured text, non-standard formats, which panel each key element was found on, and any discrepancies with application data; do NOT report prohibited claims here>"
+}
+
+Do not infer, complete, or reformat any text. Return null when text is absent or unreadable.`;
 
 function buildPanelManifest(panels: Pick<PanelImage, "fileName">[]): string {
   if (panels.length === 0) return "";
@@ -342,36 +309,7 @@ Application data on file for comparison:
 Compare each extracted field against the application data and flag any discrepancies in analysisNotes.
 ` : "No application data provided — perform format-only validation against TTB requirements."}
 
-Return ONLY a valid JSON object with this exact structure:
-{
-  "rawText": "<all visible text from the label images, verbatim, in reading order — use ONLY '--- [Panel 1] ---', '--- [Panel 2] ---', etc. as separators; no filenames, no extra text in separators>",
-  "confidence": <integer 0–100: your overall quality assessment of the submission — a general impression of how clearly the label text is readable across all panels>,
-  "fieldConfidences": {
-    "brandName": <0–100: readability of the brand name text on its clearest panel>,
-    "classType": <0–100: readability of the class/type designation>,
-    "alcoholContent": <0–100: readability of the alcohol content statement>,
-    "netContents": <0–100: readability of the net contents statement>,
-    "bottlerStatement": <0–100: readability of the bottler/importer name and address>,
-    "governmentWarning": 0,
-    "countryOfOrigin": <0–100: readability of the country of origin statement; use 100 for domestic products where it is not required>,
-    "prohibitedClaims": <0–100: confidence that all marketing claims have been screened — lower if some text was unclear>
-  },
-  "extractedFields": {
-    "brandName": "<brand name exactly as printed, or null>",
-    "classType": "<full class/type designation exactly as printed including all modifiers, or null>",
-    "alcoholContent": "<alcohol content statement exactly as printed (e.g. '40% Alc. by Vol.' or '40 ABV'), or null>",
-    "netContents": "<net contents exactly as printed (e.g. '750 mL' or '750'), or null>",
-    "bottlerStatement": "<full bottler/importer/brewer statement exactly as printed including qualifying verb and city/state, or null>",
-    "governmentWarning": null,
-    "governmentWarningLegible": false,
-    "governmentWarningPanel": <1-indexed panel number where the "GOVERNMENT WARNING:" fine-print block is located, or null if not found on any panel>,
-    "countryOfOrigin": "<country of origin exactly as printed for imported products (e.g. 'PRODUCT OF ENGLAND'), or null>",
-    "prohibitedClaims": "<pipe-separated list of ALL detected violations across ALL panels in format '[CATEGORY|SEVERITY]: \\"exact claim text\\" — reason'; CATEGORY is one of HEALTH/THERAPEUTIC, INTOXICATION/EXCESSIVE DRINKING, ORGANIC WITHOUT CERTIFICATION, FALSE GEOGRAPHIC/PRODUCTION, OBSCENE/OFFENSIVE/ILLEGAL, MISLEADING QUALITY CLAIM, UNVERIFIABLE AWARD/RECOGNITION, MISLEADING HEALTH IMPLICATION, MISLEADING OVERALL IMPRESSION, MISLEADING NUTRIENT; SEVERITY is FAIL or REVIEW; null if none detected after scanning all panels>"
-  },
-  "analysisNotes": "<note image quality issues, partially obscured text, non-standard formats, which panel each key element was found on, and any discrepancies with application data; do NOT report prohibited claims here>"
-}
-
-Do not infer, complete, or reformat any text. Return null when text is absent or unreadable.`;
+Respond with the JSON object defined in the OUTPUT FORMAT section of your instructions.`;
 
 export interface AiAnalysisResult {
   rawText: string;
@@ -455,34 +393,34 @@ export interface AppDocExtractionResult {
 export async function analyzeApplicationDocument(
   doc: PanelImage
 ): Promise<AppDocExtractionResult> {
-  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-  const response = await client.chat.completions.create({
-    model: "gpt-4o",
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
     max_tokens: 800,
+    system: APP_DOC_SYSTEM_PROMPT,
     messages: [
-      { role: "system", content: APP_DOC_SYSTEM_PROMPT },
       {
         role: "user",
         content: [
           {
-            type: "image_url",
-            image_url: {
-              url: `data:${doc.mimeType};base64,${doc.base64}`,
-              detail: "auto",
+            type: "image",
+            source: {
+              type: "base64",
+              media_type: doc.mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+              data: doc.base64,
             },
           },
           { type: "text", text: APP_DOC_USER_PROMPT },
         ],
       },
     ],
-    response_format: { type: "json_object" },
   });
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new Error("OpenAI returned an empty response.");
+  const block = response.content[0];
+  if (!block || block.type !== "text") throw new Error("Claude returned an empty response.");
 
-  const parsed = JSON.parse(content);
+  const parsed = JSON.parse(block.text);
 
   return {
     applicationData: {
@@ -507,44 +445,45 @@ export async function analyzeLabel(
   panels: PanelImage[],
   appData: ApplicationData | null
 ): Promise<AiAnalysisResult> {
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+  const client = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
     // Keep SDK retries low so that a throttled request fails fast and our
-    // batch-queue retry logic (with its smarter 20 s wait) takes over quickly
-    // rather than letting the SDK spend 30+ s on exponential back-off.
+    // batch-queue retry logic (with its smarter 20 s wait) takes over quickly.
     maxRetries: 1,
-    // GPT-4o with high-detail images and long prompts regularly takes 30-60 s.
-    // Default SDK timeout is 10 min which is fine, but be explicit so future
-    // infra changes (Vercel edge, etc.) don't silently cut the call short.
+    // Claude Haiku is fast but give ample timeout for multi-panel labels.
     timeout: 120_000,
   });
 
-  // Send images as bare image blocks — no interleaved text labels.
-  // Panel identification is conveyed entirely through the text prompt so
-  // filenames are never visible to the extraction pass and cannot be
-  // mistaken for label content.
-  // Use high detail so GPT-4o tiles each panel at full resolution. This is essential
-  // for reading small-print text like the government warning accurately rather than
-  // completing it from memory. The increased token cost is acceptable for accuracy.
-  const imageBlocks = panels.map((panel) => ({
-    type: "image_url" as const,
-    image_url: {
-      url: `data:${panel.mimeType};base64,${panel.base64}`,
-      detail: "high" as const,
+  // Send images as inline base64 blocks.  Panel identification is conveyed
+  // through the text prompt so filenames cannot be mistaken for label content.
+  const imageBlocks: Anthropic.ImageBlockParam[] = panels.map((panel) => ({
+    type: "image",
+    source: {
+      type: "base64",
+      media_type: panel.mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+      data: panel.base64,
     },
   }));
 
   // Typical label response is 1,000–2,000 tokens of JSON.  3,000 gives a safe
-  // 2× margin while reducing the token reservation OpenAI holds against the
-  // per-minute budget for every in-flight request.
-  const response = await client.chat.completions.create({
-    model: "gpt-4o",
+  // 2× margin.
+  //
+  // Prompt caching: the system prompt is ~6,700 tokens and identical across every
+  // label.  Marking it with cache_control tells Anthropic to store it for 5 minutes.
+  // The first call in a session pays a 25% write surcharge; every subsequent call
+  // within that window reads from cache at 10% of normal cost and skips processing
+  // those tokens entirely, cutting per-label latency from ~11 s → ~3–5 s.
+  const response = await client.messages.create({
+    model: "claude-haiku-4-5",
     max_tokens: 3000,
-    messages: [
+    system: [
       {
-        role: "system",
-        content: SYSTEM_PROMPT,
+        type: "text",
+        text: SYSTEM_PROMPT,
+        cache_control: { type: "ephemeral" },
       },
+    ],
+    messages: [
       {
         role: "user",
         content: [
@@ -556,17 +495,20 @@ export async function analyzeLabel(
         ],
       },
     ],
-    response_format: { type: "json_object" },
   });
 
-  const content = response.choices[0]?.message?.content;
-  if (!content) {
-    throw new Error("OpenAI returned an empty response.");
+  const block = response.content[0];
+  if (!block || block.type !== "text") {
+    throw new Error("Claude returned an empty response.");
   }
 
-  const parsed = JSON.parse(content) as AiAnalysisResult;
+  // Claude may occasionally wrap the JSON in a markdown code fence even when
+  // instructed not to — strip it defensively before parsing.
+  const rawContent = block.text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 
-  // Strip panel separator markers that GPT-4o sometimes incorrectly injects into field values.
+  const parsed = JSON.parse(rawContent) as AiAnalysisResult;
+
+  // Strip panel separator markers that Claude sometimes incorrectly injects into field values.
   // Handles all observed variants:
   //   "--- [Panel 1] ---"                (standard)
   //   "--- [Panel 1: filename.png] ---"  (with filename)

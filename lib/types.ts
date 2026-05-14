@@ -28,7 +28,7 @@ export interface LabelValidationResult {
   matchedApplicationId: string | null;
   matchedApplicationData: ApplicationData | null;
   unmatched: boolean;
-  /** Whether GPT-4o Vision was used (true) or Tesseract OCR fallback (false) */
+  /** Whether Claude Haiku Vision was used (true) or Tesseract OCR fallback (false) */
   usedAi?: boolean;
   /** Notes from the AI analysis (image quality, legibility issues, etc.) */
   analysisNotes?: string;

@@ -5,11 +5,10 @@
  * 1. Receives all label panel images (base64) and their filenames for one submission
  * 2. Looks up the matching application record from the JSON registry
  *    (panel position suffixes like _front, _back, _neck are stripped automatically)
- * 3. Calls GPT-4o Vision with ALL panels in a single request so it can
+ * 3. Calls Claude Haiku Vision with ALL panels in a single request so it can
  *    synthesize required elements distributed across multiple label surfaces
- * 4. Falls back to Tesseract OCR (client-side) if OpenAI is unavailable
- * 5. Runs the TTB compliance validation engine
- * 6. Returns a complete LabelValidationResult covering the whole submission
+ * 4. Runs the TTB compliance validation engine
+ * 5. Returns a complete LabelValidationResult covering the whole submission
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -69,8 +68,8 @@ export async function POST(req: NextRequest) {
 
   const appData: ApplicationData = lookup.applicationData ?? EMPTY_APP_DATA;
 
-  // Step 2: Try GPT-4o Vision first
-  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== "your-openai-api-key-here") {
+  // Step 2: Try Claude Haiku Vision
+  if (process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== "your-anthropic-api-key-here") {
     try {
       const panelImages: PanelImage[] = panels.map((p) => ({
         base64: p.base64,
@@ -143,9 +142,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: isRateLimit
-            ? "OpenAI rate limit exceeded. The batch is sending too many requests per minute. " +
+            ? "Anthropic rate limit exceeded. The batch is sending too many requests per minute. " +
               "This is handled automatically — please wait a moment and retry any failed labels."
-            : `GPT-4o Vision analysis failed: ${aiError instanceof Error ? aiError.message : String(aiError)}`,
+            : `Claude Haiku Vision analysis failed: ${aiError instanceof Error ? aiError.message : String(aiError)}`,
         },
         { status: isRateLimit ? 429 : 502 }
       );
@@ -154,7 +153,7 @@ export async function POST(req: NextRequest) {
 
   // No API key configured
   return NextResponse.json(
-    { error: "OPENAI_API_KEY is not configured. GPT-4o Vision is required." },
+    { error: "ANTHROPIC_API_KEY is not configured. Claude Haiku Vision is required." },
     { status: 503 }
   );
 }

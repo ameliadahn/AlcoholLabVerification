@@ -4,13 +4,14 @@
  * Accepts ALL panels of a single label submission (front, back, neck, cap, etc.)
  * and processes them together as one unit.
  *
- * All field extraction uses GPT-4o Vision exclusively via /api/analyze.
+ * All field extraction uses Claude Haiku Vision exclusively via /api/analyze.
  * If the server returns an error the call throws — there is no OCR fallback
  * for field extraction.
  *
- * Government warning verification is the one intentional exception: after GPT-4o
- * identifies which panel contains the warning, Tesseract OCR is run on that panel
- * only to produce a character-exact text match for compliance checking.
+ * Government warning verification is the one intentional exception: Tesseract OCR
+ * runs on all panels in parallel with the Claude API call so its time is completely
+ * hidden behind the network round-trip. When Claude returns with the panel hint,
+ * the OCR results are already ready and only the identified panel's result is used.
  */
 
 import { v4 as uuidv4 } from "uuid";
@@ -19,15 +20,15 @@ import { ParsedFields, extractGovernmentWarning } from "./field-parser";
 import { validateGovernmentWarning, validateFieldOfVision, computeOverallStatus, computeOverallConfidence } from "./validation";
 import { LabelValidationResult, ApplicationData, PanelUpload } from "./types";
 
-// OpenAI tiles images in 512×512 blocks for detail:"high".
-// A 1024px image → 2×2 tiles = 765 tokens.  A ≤512px image → 1×1 tile = 255 tokens.
-// Keeping the longest side ≤ 1024 and the minimum at 512 gives GPT-4o enough
-// pixels to read fine-print compliance text while staying in the 1–2 tile range.
+// Claude handles images natively — keeping the longest side ≤ 768 balances
+// readability of fine-print text against token cost and request latency.
+// At 768px, each panel is ~800 image tokens vs ~1,400 at 1024px (~44% cheaper).
+// Tesseract OCR handles the fine-print government warning independently, so
+// Claude only needs to locate which panel it's on, not read every character.
 /** Images smaller than this are upscaled so fine print is readable */
 const MIN_IMAGE_DIMENSION = 512;
-/** Images larger than this are downscaled — keeps tile count to 1–4 and
- *  token cost per image at 255–765 instead of 765–1445+ */
-const MAX_IMAGE_DIMENSION = 1024;
+/** Images larger than this are downscaled to reduce image tokens and latency */
+const MAX_IMAGE_DIMENSION = 768;
 /** Higher quality preserves small-text detail that JPEG artifacts would destroy */
 const JPEG_QUALITY = 0.92;
 
@@ -56,8 +57,8 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
       const { naturalWidth: w, naturalHeight: h } = img;
       const maxDim = Math.max(w, h);
       // Upscale images that are too small so fine-print text (ABV, net contents,
-      // bottler address) occupies enough pixels for GPT-4o to read reliably.
-      // Downscale images that are too large to keep token costs manageable.
+      // bottler address) occupies enough pixels for Claude to read reliably.
+      // Downscale images that are too large to keep payload size manageable.
       const scale = maxDim < MIN_IMAGE_DIMENSION
         ? MIN_IMAGE_DIMENSION / maxDim
         : Math.min(1, MAX_IMAGE_DIMENSION / maxDim);
@@ -125,7 +126,7 @@ function scoreOcrWarningConfidence(
 }
 
 /**
- * Process a complete label submission: all panels analyzed together via GPT-4o Vision.
+ * Process a complete label submission: all panels analyzed together via Claude Haiku Vision.
  *
  * @param panels                - Array of PanelUpload objects (each has file + previewUrl)
  * @param onProgress            - Unused; kept for interface compatibility
@@ -155,6 +156,12 @@ export async function processSubmission(
     fileName: fileNames[i],
   }));
 
+  // Kick off Tesseract OCR on ALL panels immediately — runs in parallel with the
+  // Claude API call so its processing time is completely hidden behind the network
+  // round-trip. By the time Claude returns with the panel hint, the OCR results
+  // are already done (or nearly done). This removes 3–8 s from perceived latency.
+  const allOcrPromise = Promise.all(panels.map((p) => runOcr(p.file)));
+
   const response = await fetch("/api/analyze", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -164,7 +171,7 @@ export async function processSubmission(
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    const message = body.error ?? `GPT-4o analysis request failed (HTTP ${response.status})`;
+    const message = body.error ?? `Claude analysis request failed (HTTP ${response.status})`;
     const err = new Error(message);
     // Tag rate-limit errors so callers can show a different message.
     if (response.status === 429) (err as Error & { isRateLimit: boolean }).isRateLimit = true;
@@ -173,9 +180,8 @@ export async function processSubmission(
 
   const data = await response.json();
 
-  // AI identified which panel holds the government warning. Run Tesseract OCR on
-  // that panel only to produce a character-exact text match for compliance checking.
-  // (All other fields are extracted exclusively by GPT-4o — never by OCR.)
+  // Claude identified which panel holds the government warning.
+  // All other fields are extracted exclusively by Claude — never by OCR.
   const panelHint: number | null = data.governmentWarningPanelHint ?? null;
   const panelIndex =
     panelHint !== null && panelHint >= 1 && panelHint <= panels.length
@@ -188,17 +194,20 @@ export async function processSubmission(
   let newOcrConfidence = data.ocrConfidence;
 
   try {
+    // OCR was already running in parallel — await the settled results now.
+    // If OCR finished before Claude, this resolves instantly with no extra wait.
+    const allOcrResults = await allOcrPromise;
+
     let ocrWarningText: string | null = null;
     let ocrWarningConf = 20;
 
     if (panelIndex !== null) {
-      // Targeted: OCR only the panel AI identified
-      const ocrResult = await runOcr(panels[panelIndex].file);
+      // Targeted: use the panel Claude identified — result already computed
+      const ocrResult = allOcrResults[panelIndex];
       ocrWarningText = extractGovernmentWarning(ocrResult.text);
       ocrWarningConf = scoreOcrWarningConfidence(ocrWarningText, [ocrResult]);
     } else {
-      // No hint — scan all panels to locate the warning
-      const allOcrResults = await Promise.all(panels.map((p) => runOcr(p.file)));
+      // No hint — combine all panels to locate the warning
       const combinedText = allOcrResults
         .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
         .join("\n\n");

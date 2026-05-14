@@ -3,7 +3,7 @@
  *
  * Accepts a single document image (base64 + mimeType) — a TTB COLA application
  * form, scanned application, or any document containing filed application data —
- * and uses GPT-4o Vision to extract the structured ApplicationData fields.
+ * and uses Claude Haiku Vision to extract the structured ApplicationData fields.
  *
  * Returns the extracted data for the user to review and edit before verification.
  */
@@ -12,9 +12,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { analyzeApplicationDocument } from "@/lib/ai-analyzer";
 
 export async function POST(req: NextRequest) {
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === "your-openai-api-key-here") {
+  if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === "your-anthropic-api-key-here") {
     return NextResponse.json(
-      { error: "OpenAI API key not configured — document extraction is unavailable." },
+      { error: "Anthropic API key not configured — document extraction is unavailable." },
       { status: 503 }
     );
   }

@@ -164,7 +164,7 @@ export default function ValidationPanel({
               ? "bg-violet-50 text-violet-700 border-violet-200"
               : "bg-gray-100 text-gray-600 border-gray-200"
             }`}>
-            {result.usedAi ? "✦ GPT-4o Vision" : "Tesseract OCR (fallback)"}
+            {result.usedAi ? "✦ Claude Haiku Vision" : "Tesseract OCR (fallback)"}
           </span>
           <span className="text-sm text-gray-500">
             Confidence: <strong className={result.ocrConfidence >= 85 ? "text-emerald-600" : result.ocrConfidence >= 70 ? "text-amber-600" : "text-red-600"}>{result.ocrConfidence.toFixed(0)}%</strong>
