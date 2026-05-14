@@ -230,17 +230,19 @@ export async function processSubmission(
 
       if (ocrConfirmsWarning) {
         // OCR independently found warning anchor words — AI extraction is trustworthy.
+        // Use AI text with the strict 95% threshold.
         warningText = aiWarningText;
         warningLegible = true;
         warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
       } else {
         // OCR found none of the government warning anchor words on any panel.
-        // This strongly suggests the AI hallucinated — fall back to OCR extraction
-        // across all panels, which will produce null if the warning is genuinely absent.
-        const allOcrText = allOcrResults
-          .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
-          .join("\n\n");
-        warningText = extractGovernmentWarning(allOcrText);
+        // Rather than nulling out (which causes false "missing" failures when
+        // Tesseract simply can't read fine print that Claude could), keep the AI
+        // text but treat it as unattested — apply the more lenient OCR threshold
+        // (85%) instead of the AI threshold (95%). This still rejects hallucinated
+        // text that is a near-perfect copy of the standard wording, while allowing
+        // genuine readings with minor variations to pass.
+        warningText = aiWarningText;
         warningLegible = undefined;
         warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
       }
