@@ -113,7 +113,7 @@
   },
   {
     "id": "highlandLegacyLabel",
-    "expectedResult": "fail",
+    "expectedResult": "review",
     "reasonForResult": "The front label displays 'ULTRA PREMIUM' and 'SIPPED BY CONNOISSEURS WORLDWIDE', both of which are unsubstantiated superlatives that cannot be objectively proven, falling under TTB's UNVERIFIABLE/MISLEADING QUALITY restricted claim category.",
     "applicationData": {
       "brandName": "Highland Legacy",

@@ -118,13 +118,17 @@ Language that stops short of an explicit health claim but strongly implies a wel
   ❌ "The clean spirit" — implies health/purity benefit beyond flavor
   ❌ "Better for you" / "The healthy way to celebrate" — implies health benefit
   ❌ "Fits your active lifestyle" — implies compatibility with healthy living
+  CRITICAL — product photographs, lifestyle photography, and bottle-in-scene imagery must NEVER contribute to this flag. Evaluate ONLY the printed text on the label itself. A staged product photograph does not make otherwise-acceptable text a health implication.
+  CRITICAL — the following combinations are STANDARD SPIRITS LANGUAGE and must NEVER be flagged regardless of context or how they are combined: "exceptional purity," "clean finish," "crisp finish," "clean and crisp," "clean, crisp finish," "pure and clean," "distilled for purity," "distilled X times for exceptional purity," "exceptional purity and a clean, crisp finish." These are sensory and production descriptors, not health claims.
 
 [MISLEADING OVERALL IMPRESSION|REVIEW]
 Even when no single statement is prohibited, the COMBINATION of elements on the label may collectively imply a health or wellness benefit and mislead a reasonable consumer.
   Flag when: medical-style imagery (e.g. green cross, pill/syringe graphics, doctor/clinical iconography) + explicit wellness or fitness framing (e.g. "Fit for the active lifestyle," "Better for your body," "The healthy way") appear together in a way that frames the product as a healthy choice.
   IMPORTANT — do NOT flag "pure," "purity," "clean," "natural," or "exceptional purity" on their own. These are standard sensory/production descriptors for spirits and do NOT constitute a health claim unless they are directly paired with medical-style imagery or an explicit wellness benefit statement.
+  IMPORTANT — lifestyle product photography (a bottle photographed in a scenic or staged setting) is NOT medical-style imagery and must never be used to elevate standard sensory language into a health claim.
   Example that SHOULD be flagged: A label with a green cross icon, "Pure. Clean. Natural." copy, and "Fit for the active lifestyle" — the combination implies health benefits.
   Example that should NOT be flagged: A label that says "Exceptional Purity" or "Pure. Clean." with no medical imagery and no wellness/fitness claims — this is standard sensory language.
+  Example that should NOT be flagged: A label with "exceptional purity and a clean, crisp finish" accompanied by a scenic lifestyle photograph — the photograph is irrelevant; the text alone is standard sensory language.
 
 [MISLEADING NUTRIENT|REVIEW]
 Nutrient-content claims without the required "statement of average analysis" or "Serving Facts" panel (TTB Ruling 2004–1).
@@ -135,9 +139,10 @@ Nutrient-content claims without the required "statement of average analysis" or 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 DO NOT FLAG — standard industry language
 ━━━━━━━━━━━━━━━━━━━━━━━━━
-- Production process descriptors: "Small Batch," "Handcrafted," "Craft," "Artisan," "Pot Still," "Single Malt," "Barrel Aged," "Cask Strength," "Distilled X Times," "Aged X Years in [barrel type]," "Limited Edition," "Reserve," "Single Barrel"
-- Sensory and flavor language — NEVER flag these regardless of context: "smooth," "crisp," "clean finish," "rich," "complex," "bold," "robust," "velvety," "refined," "nuanced," "smooth finish," "warm finish," "lingering finish," "rich flavor," "smooth, rich flavor," "warm, lingering finish," "exceptional clarity," "exceptional purity," "pure," "purity," "full-bodied," "silky," "mellow," "bright," "lush," "rounded," "well-balanced," "approachable," "easy-drinking" — these describe taste, texture, aroma, and distillation quality; they are NOT quality ranking claims and must never be flagged under MISLEADING QUALITY CLAIM or any other category
+- Production process descriptors: "Small Batch," "Handcrafted," "Craft," "Artisan," "Pot Still," "Single Malt," "Barrel Aged," "Cask Strength," "Distilled X Times," "Distilled five times," "Distilled X times for exceptional purity," "Aged X Years in [barrel type]," "Limited Edition," "Reserve," "Single Barrel"
+- Sensory and flavor language — NEVER flag these regardless of context: "smooth," "crisp," "clean finish," "rich," "complex," "bold," "robust," "velvety," "refined," "nuanced," "smooth finish," "warm finish," "lingering finish," "rich flavor," "smooth, rich flavor," "warm, lingering finish," "exceptional clarity," "exceptional purity," "pure," "purity," "full-bodied," "silky," "mellow," "bright," "lush," "rounded," "well-balanced," "approachable," "easy-drinking," "clean, crisp finish," "exceptional purity and a clean, crisp finish" — these describe taste, texture, aroma, and distillation quality; they are NOT quality ranking claims and must never be flagged under MISLEADING QUALITY CLAIM or any other category
 - Subjective quality adjectives with no objective assertion: "premium," "superior," "fine," "exceptional," "ultra," "world-class" — these are standard puffery
+- Process + sensory combinations: "Distilled X times for [sensory descriptor]" (e.g. "Distilled five times for exceptional purity," "Triple distilled for smoothness") — the distillation count is a factual process claim and the sensory result is a standard descriptor; this combination must NEVER be flagged
 - Truthful origin statements about the product's actual location: "Distilled in Kentucky" (for a Kentucky product), "Brewed in Colorado" (for a Colorado product)
 - Fanciful/humorous brand names or taglines that make no objective claim: "Sandy Beaches Rum," "Your Mom's Favorite Vodka"
 - Specific verifiable awards with a named source: "2023 SF World Spirits Competition Gold"

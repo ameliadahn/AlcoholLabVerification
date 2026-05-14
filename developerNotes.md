@@ -36,7 +36,7 @@ Performance
 
 One challenge was balancing performance expectations, in the provided interviews some suggested 5–10 minutes per review was typical for a human reviewer, while others said reviewers would abandon any system taking longer than 5 seconds. I focused on making analysis as fast as possible using a faster model, resizing images before upload, and running OCR in parallel with the API call. I was not able to get individual processing down to 5 seconds consistently, but with batch uploads, the time averages about 2.3 seconds per label. I opted for accuracy over speed as one of my tradeoffs.
 
-The accuracy piece was a lot of trial and error. Multi-panel support was added so the model analyzes all panels together rather than in isolation, and a confidence scoring threshold was implemented so low-confidence extractions are flagged or failed automatically rather than passed. 
+The accuracy piece was a lot of trial and error. Multi-panel support was added so the model analyzes all panels together rather than in isolation, and a confidence scoring threshold was implemented so low-confidence extractions are flagged or failed automatically rather than passed. The AI model will periodically hallucinate the government warning, so I added a cross-check with OCR.
 
 Infrastructure and Security
 

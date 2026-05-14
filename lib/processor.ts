@@ -215,11 +215,32 @@ export async function processSubmission(
     let warningConf = 20;
 
     if (aiWarningLegible && aiWarningText) {
-      // AI confirmed it read every word — use AI extraction directly.
-      // OCR confidence is scored against the AI text to surface any readability concerns.
-      warningText = aiWarningText;
-      warningLegible = true;
-      warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
+      // Anti-hallucination check: verify OCR can find at least one distinctive
+      // anchor word from the government warning on the identified panel.
+      // "surgeon", "impairs", and "birth" are unique to the required warning text —
+      // if OCR finds none of them, the AI almost certainly returned the standard
+      // wording from memory rather than reading it from the image pixels.
+      const anchorWords = ["surgeon", "impairs", "birth"];
+      const checkOcrs = panelIndex !== null ? [allOcrResults[panelIndex]] : allOcrResults;
+      const combinedOcrText = checkOcrs.map((r) => r.text).join(" ").toLowerCase();
+      const ocrConfirmsWarning = anchorWords.some((w) => combinedOcrText.includes(w));
+
+      if (ocrConfirmsWarning) {
+        // OCR independently found warning anchor words — AI extraction is trustworthy.
+        warningText = aiWarningText;
+        warningLegible = true;
+        warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
+      } else {
+        // OCR found none of the government warning anchor words on the panel Claude
+        // identified. Fall back to the OCR extraction path — this will produce null
+        // if the warning is genuinely unreadable, correctly failing the field.
+        const ocrPanelText = panelIndex !== null
+          ? allOcrResults[panelIndex].text
+          : allOcrResults.map((r) => r.text).join("\n");
+        warningText = extractGovernmentWarning(ocrPanelText);
+        warningLegible = undefined;
+        warningConf = scoreOcrWarningConfidence(warningText, checkOcrs);
+      }
     } else {
       // AI couldn't read it (fine print too small) — fall back to Tesseract OCR.
       let ocrWarningText: string | null = null;
