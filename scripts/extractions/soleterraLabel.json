@@ -1,0 +1,49 @@
+{
+  "labelId": "soleterraLabel",
+  "expectedResult": "fail",
+  "reasonForResult": "Two violations found across the two submitted panels: (1) ILLEGIBLE BACK LABEL — The back label is entirely blurred and unreadable across the full extent of its text. The mandatory Government Warning (27 CFR 16.21) is present but completely illegible, violating the TTB legibility requirement that all mandatory statements must be clearly readable as printed. The importer statement and all other back-label information are similarly unreadable. (2) NON-ENGLISH COUNTRY OF ORIGIN — The front of the bottle displays 'PRODOTTO IN ITALIA' (Italian), rather than the English-language 'Product of Italy' required by CBP regulations for the US market. No English-language country of origin statement appears on any submitted panel.",
+  "applicationData": {
+    "brandName": "Soléterra",
+    "classType": "Toscana Rosso",
+    "alcoholContent": "13.5% Alc. by Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Soleterra imports, Miami, FL",
+    "isImported": true,
+    "countryOfOrigin": "Italy"
+  },
+  "submissionDir": "public/sampleLabels/failingLabels/soleterraLabel",
+  "panelFiles": [
+    "backLabel.png",
+    "fullBottle.png"
+  ],
+  "gptOutput": {
+    "rawText": "--- [Panel 1] ---\nSOLÉTERRA\nTOSCANA ROSSO\nPRODUCT OF ITALY\nGOVERNMENT WARNING: ------------------------------\nContains\nSoleterra Imports,\nMiami, FL\n750 mL\n--- [Panel 2] ---\nSOLÉTERRA\nTOSCANA\nROSSO\n2019\nPRODOTTO IN ITALIA",
+    "confidence": 85,
+    "extractedFields": {
+      "brandName": "SOLÉTERRA",
+      "classType": "TOSCANA ROSSO",
+      "alcoholContent": null,
+      "netContents": "750 mL",
+      "bottlerStatement": "Soleterra Imports, Miami, FL",
+      "governmentWarning": null,
+      "countryOfOrigin": "PRODUCT OF ITALY",
+      "prohibitedClaims": null
+    },
+    "analysisNotes": "Alcohol content not visible on either panel. Government warning text is blurry, header present but unreadable – returned null. Country of origin present on Panel 1 but 'PRODOTTO IN ITALIA' on Panel 2 does not comply with English requirement. Considered 'PRODUCT OF ITALY' as compliant. Bottle photograph did not impact confidence scoring due to blurred imagery."
+  },
+  "correction": {
+    "rawText": "--- [Panel 1] ---\nSOLÉTERRA\nTOSCANA ROSSO\nPRODUCT OF ITALY\nGOVERNMENT WARNING: ------------------------------\nContains\nSoleterra Imports,\nMiami, FL\n750 mL\n--- [Panel 2] ---\nSOLÉTERRA\nTOSCANA\nROSSO\n2019\nPRODOTTO IN ITALIA",
+    "confidence": 32,
+    "extractedFields": {
+      "brandName": "SOLÉTERRA",
+      "classType": "TOSCANA ROSSO",
+      "alcoholContent": null,
+      "netContents": null,
+      "bottlerStatement": null,
+      "governmentWarning": null,
+      "countryOfOrigin": null,
+      "prohibitedClaims": null
+    },
+    "analysisNotes": "Alcohol content not visible on either panel. Government warning text is blurry, header present but unreadable – returned null. Country of origin present on Panel 1 but 'PRODOTTO IN ITALIA' on Panel 2 does not comply with English requirement so this is null as it is not a valid country of origin presentation. Bottle photograph did not impact confidence scoring due to blurred imagery. The label fails"
+  }
+}

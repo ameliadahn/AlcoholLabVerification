@@ -4,34 +4,32 @@
  * Accepts ALL panels of a single label submission (front, back, neck, cap, etc.)
  * and processes them together as one unit.
  *
- * Primary path:   all panels → /api/analyze (server-side GPT-4o Vision) → single validation result
- * Fallback path:  all panels → Tesseract OCR (client-side, per panel, text concatenated)
- *                           → field parsing → validation result
+ * All field extraction uses GPT-4o Vision exclusively via /api/analyze.
+ * If the server returns an error the call throws — there is no OCR fallback
+ * for field extraction.
  *
- * The fallback activates automatically when the API key is not configured
- * or when the OpenAI request fails.
+ * Government warning verification is the one intentional exception: after GPT-4o
+ * identifies which panel contains the warning, Tesseract OCR is run on that panel
+ * only to produce a character-exact text match for compliance checking.
  */
 
 import { v4 as uuidv4 } from "uuid";
-import { runOcr } from "./ocr";
-import { parseFields } from "./field-parser";
-import { validateLabel, computeOverallStatus } from "./validation";
+import { runOcr, OcrResult } from "./ocr";
+import { ParsedFields, extractGovernmentWarning } from "./field-parser";
+import { validateGovernmentWarning, validateFieldOfVision, computeOverallStatus, computeOverallConfidence } from "./validation";
 import { LabelValidationResult, ApplicationData, PanelUpload } from "./types";
 
-const EMPTY_APP_DATA: ApplicationData = {
-  brandName: "",
-  classType: "",
-  alcoholContent: "",
-  netContents: "",
-  bottlerName: "",
-  bottlerCity: "",
-  bottlerState: "",
-  isImported: false,
-  countryOfOrigin: "",
-};
-
+// OpenAI tiles images in 512×512 blocks for detail:"high".
+// A 1024px image → 2×2 tiles = 765 tokens.  A ≤512px image → 1×1 tile = 255 tokens.
+// Keeping the longest side ≤ 1024 and the minimum at 512 gives GPT-4o enough
+// pixels to read fine-print compliance text while staying in the 1–2 tile range.
+/** Images smaller than this are upscaled so fine print is readable */
+const MIN_IMAGE_DIMENSION = 512;
+/** Images larger than this are downscaled — keeps tile count to 1–4 and
+ *  token cost per image at 255–765 instead of 765–1445+ */
 const MAX_IMAGE_DIMENSION = 1024;
-const JPEG_QUALITY = 0.85;
+/** Higher quality preserves small-text detail that JPEG artifacts would destroy */
+const JPEG_QUALITY = 0.92;
 
 async function fileToBase64(file: File): Promise<{ base64: string; mimeType: string }> {
   if (file.type === "application/pdf") {
@@ -56,7 +54,13 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
       URL.revokeObjectURL(objectUrl);
 
       const { naturalWidth: w, naturalHeight: h } = img;
-      const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(w, h));
+      const maxDim = Math.max(w, h);
+      // Upscale images that are too small so fine-print text (ABV, net contents,
+      // bottler address) occupies enough pixels for GPT-4o to read reliably.
+      // Downscale images that are too large to keep token costs manageable.
+      const scale = maxDim < MIN_IMAGE_DIMENSION
+        ? MIN_IMAGE_DIMENSION / maxDim
+        : Math.min(1, MAX_IMAGE_DIMENSION / maxDim);
       const targetW = Math.round(w * scale);
       const targetH = Math.round(h * scale);
 
@@ -77,13 +81,57 @@ async function fileToBase64(file: File): Promise<{ base64: string; mimeType: str
 }
 
 /**
- * Process a complete label submission: all panels analyzed together.
+ * Scores the OCR-extracted government warning text against per-panel word-level
+ * Tesseract confidence scores. Returns 20 (null required field) when no warning
+ * was found, otherwise the best single-panel word-match score, falling back to
+ * the document average when no panel has enough matching tokens.
+ */
+function scoreOcrWarningConfidence(
+  warningText: string | null,
+  ocrResults: OcrResult[]
+): number {
+  if (!warningText) return 20;
+
+  const avgConf = Math.round(
+    ocrResults.reduce((s, r) => s + r.confidence, 0) / ocrResults.length
+  );
+
+  const tokens = warningText
+    .toLowerCase()
+    .split(/[\s.,;:()!?]+/)
+    .map((t) => t.replace(/[^a-z0-9]/g, ""))
+    .filter((t) => t.length > 2);
+
+  if (tokens.length === 0) return avgConf;
+
+  let bestScore = -1;
+  for (const ocr of ocrResults) {
+    const map = new Map<string, number>();
+    for (const w of ocr.words) {
+      const key = w.text.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (key.length > 1 && !map.has(key)) map.set(key, w.confidence);
+    }
+    const hits = tokens
+      .map((t) => map.get(t))
+      .filter((c): c is number => c !== undefined);
+    if (hits.length >= Math.ceil(tokens.length / 2)) {
+      const score = Math.round(hits.reduce((s, c) => s + c, 0) / hits.length);
+      if (score > bestScore) bestScore = score;
+    }
+  }
+
+  const raw = bestScore >= 0 ? bestScore : avgConf;
+  return Math.min(100, raw + 10);
+}
+
+/**
+ * Process a complete label submission: all panels analyzed together via GPT-4o Vision.
  *
  * @param panels                - Array of PanelUpload objects (each has file + previewUrl)
- * @param onProgress            - Optional progress callback (0–100), called during OCR fallback
+ * @param onProgress            - Unused; kept for interface compatibility
  * @param manualApplicationData - When provided (manual entry mode), skips the registry lookup
  *                                and uses this data for field comparisons instead
- * @param signal                - Optional AbortSignal; aborts the fetch and OCR work in progress
+ * @param signal                - Optional AbortSignal; aborts the in-flight fetch
  */
 export async function processSubmission(
   panels: PanelUpload[],
@@ -91,130 +139,115 @@ export async function processSubmission(
   manualApplicationData?: ApplicationData,
   signal?: AbortSignal
 ): Promise<LabelValidationResult> {
+  void onProgress; // government warning OCR has no meaningful progress to report
+
   const startTime = Date.now();
   const fileNames = panels.map((p) => p.file.name);
   const imageUrls = panels.map((p) => p.previewUrl);
 
-  // ── Primary path: GPT-4o via server-side API route ──────────────────────
-  try {
-    const encoded = await Promise.all(panels.map((p) => fileToBase64(p.file)));
-
-    signal?.throwIfAborted();
-
-    const panelPayloads = encoded.map((enc, i) => ({
-      base64: enc.base64,
-      mimeType: enc.mimeType,
-      fileName: fileNames[i],
-    }));
-
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ panels: panelPayloads, manualApplicationData }),
-      signal,
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-
-      if (!data.fallbackToOcr) {
-        return {
-          ...data,
-          imageUrls,
-          id: data.id ?? uuidv4(),
-        } as LabelValidationResult;
-      }
-
-      // Server says to fall through to client-side OCR
-      const matchedApplicationData = data.matchedApplicationData ?? null;
-      const matchedApplicationId = data.matchedApplicationId ?? null;
-      const unmatched = data.unmatched ?? true;
-
-      return await runOcrFallback(
-        panels,
-        fileNames,
-        imageUrls,
-        matchedApplicationData,
-        matchedApplicationId,
-        unmatched,
-        startTime,
-        onProgress,
-        signal
-      );
-    }
-  } catch (err) {
-    // Re-throw abort errors so the caller can handle them cleanly
-    if (err instanceof Error && err.name === "AbortError") throw err;
-    console.warn("API route unavailable, falling back to Tesseract:", err);
-  }
-
+  // Encode all panels (upscale small images, convert to JPEG)
+  const encoded = await Promise.all(panels.map((p) => fileToBase64(p.file)));
   signal?.throwIfAborted();
 
-  // ── Full client-side OCR fallback (network error) ────────────────────────
-  // If manual data was supplied, preserve it so field comparisons still work.
-  return await runOcrFallback(
-    panels,
-    fileNames,
-    imageUrls,
-    manualApplicationData ?? null,
-    manualApplicationData ? "manual" : null,
-    !manualApplicationData,
-    startTime,
-    onProgress,
-    signal
-  );
-}
+  const panelPayloads = encoded.map((enc, i) => ({
+    base64: enc.base64,
+    mimeType: enc.mimeType,
+    fileName: fileNames[i],
+  }));
 
-async function runOcrFallback(
-  panels: PanelUpload[],
-  fileNames: string[],
-  imageUrls: string[],
-  matchedApplicationData: ApplicationData | null,
-  matchedApplicationId: string | null,
-  unmatched: boolean,
-  startTime: number,
-  onProgress?: (progress: number) => void,
-  signal?: AbortSignal
-): Promise<LabelValidationResult> {
-  const appData = matchedApplicationData ?? EMPTY_APP_DATA;
+  const response = await fetch("/api/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ panels: panelPayloads, manualApplicationData }),
+    signal,
+  });
 
-  // Run OCR on every panel sequentially so we can check for abort between panels.
-  const ocrResults = [];
-  for (let i = 0; i < panels.length; i++) {
-    signal?.throwIfAborted();
-    const result = await runOcr(
-      panels[i].file,
-      onProgress ? (p) => onProgress(Math.round((i + p / 100) / panels.length * 100)) : undefined
-    );
-    ocrResults.push(result);
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const message = body.error ?? `GPT-4o analysis request failed (HTTP ${response.status})`;
+    const err = new Error(message);
+    // Tag rate-limit errors so callers can show a different message.
+    if (response.status === 429) (err as Error & { isRateLimit: boolean }).isRateLimit = true;
+    throw err;
   }
 
-  const combinedText = ocrResults
-    .map((r, i) => `--- [Panel ${i + 1}: ${fileNames[i]}] ---\n${r.text}`)
-    .join("\n\n");
+  const data = await response.json();
 
-  const avgConfidence =
-    ocrResults.reduce((sum, r) => sum + r.confidence, 0) / ocrResults.length;
+  // AI identified which panel holds the government warning. Run Tesseract OCR on
+  // that panel only to produce a character-exact text match for compliance checking.
+  // (All other fields are extracted exclusively by GPT-4o — never by OCR.)
+  const panelHint: number | null = data.governmentWarningPanelHint ?? null;
+  const panelIndex =
+    panelHint !== null && panelHint >= 1 && panelHint <= panels.length
+      ? panelHint - 1
+      : null;
 
-  const parsedFields = parseFields(combinedText);
-  const validationResults = validateLabel(parsedFields, appData, avgConfidence);
-  const overallStatus = computeOverallStatus(validationResults);
+  let govWarnResult = data.fields?.governmentWarning;
+  let newFieldOfVision = data.fieldOfVision;
+  let newOverallStatus = data.overallStatus;
+  let newOcrConfidence = data.ocrConfidence;
+
+  try {
+    let ocrWarningText: string | null = null;
+    let ocrWarningConf = 20;
+
+    if (panelIndex !== null) {
+      // Targeted: OCR only the panel AI identified
+      const ocrResult = await runOcr(panels[panelIndex].file);
+      ocrWarningText = extractGovernmentWarning(ocrResult.text);
+      ocrWarningConf = scoreOcrWarningConfidence(ocrWarningText, [ocrResult]);
+    } else {
+      // No hint — scan all panels to locate the warning
+      const allOcrResults = await Promise.all(panels.map((p) => runOcr(p.file)));
+      const combinedText = allOcrResults
+        .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
+        .join("\n\n");
+      ocrWarningText = extractGovernmentWarning(combinedText);
+      ocrWarningConf = scoreOcrWarningConfidence(ocrWarningText, allOcrResults);
+    }
+
+    const ocrParsedFields: ParsedFields = {
+      brandName: null, classType: null, alcoholContent: null,
+      netContents: null, bottlerStatement: null,
+      governmentWarning: ocrWarningText,
+      governmentWarningLegible: undefined,
+      countryOfOrigin: null, rawText: "", prohibitedClaims: null,
+    };
+    govWarnResult = validateGovernmentWarning(ocrParsedFields, ocrWarningConf);
+
+    const fovParsedFields: ParsedFields = {
+      brandName: data.fields?.brandName?.extractedValue ?? null,
+      classType: data.fields?.classType?.extractedValue ?? null,
+      alcoholContent: data.fields?.alcoholContent?.extractedValue ?? null,
+      netContents: null,
+      bottlerStatement: null,
+      governmentWarning: ocrWarningText,
+      governmentWarningLegible: undefined,
+      countryOfOrigin: null,
+      rawText: data.ocrText ?? "",
+      prohibitedClaims: null,
+    };
+    const fovConf: number = data.fieldOfVision?.confidence ?? data.ocrConfidence ?? 80;
+    newFieldOfVision = validateFieldOfVision(fovParsedFields, fovConf);
+
+    const patchedResults = {
+      ...data.fields,
+      governmentWarning: govWarnResult,
+      fieldOfVision: newFieldOfVision,
+    };
+    newOverallStatus = computeOverallStatus(patchedResults);
+    newOcrConfidence = computeOverallConfidence(patchedResults);
+  } catch {
+    // Government warning OCR failed — keep the server-computed warning result
+  }
 
   return {
-    id: uuidv4(),
-    fileNames,
+    ...data,
     imageUrls,
-    panelCount: panels.length,
-    overallStatus,
-    processedAt: new Date().toISOString(),
-    processingTimeMs: Date.now() - startTime,
-    ocrText: combinedText,
-    ocrConfidence: avgConfidence,
-    matchedApplicationId,
-    matchedApplicationData,
-    unmatched,
-    fields: validationResults,
-    fieldOfVision: validationResults.fieldOfVision,
-    usedAi: false,
-  };
+    id: data.id ?? uuidv4(),
+    fields: { ...data.fields, governmentWarning: govWarnResult },
+    fieldOfVision: newFieldOfVision,
+    overallStatus: newOverallStatus,
+    ocrConfidence: newOcrConfidence,
+  } as LabelValidationResult;
 }

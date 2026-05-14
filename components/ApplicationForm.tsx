@@ -82,6 +82,19 @@ export default function ApplicationForm({ data, onChange, govWarnConfirmed, onGo
         </div>
       </div>
 
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-1">
+          Bottler / Producer Name <span className="text-red-500">*</span>
+        </label>
+        <input
+          type="text"
+          placeholder='e.g. "Old Tom Distilling Co."'
+          value={data.bottlerName ?? ""}
+          onChange={(e) => set("bottlerName", e.target.value)}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-1">

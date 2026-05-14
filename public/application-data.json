@@ -8,8 +8,7 @@
       "classType": "Straight Bourbon Whiskey",
       "alcoholContent": "46% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Bardstown",
-      "bottlerState": "KY",
+      "bottlerAddress": "Black Hollow Distilling Co., Bardstown, KY",
       "isImported": false,
       "countryOfOrigin": ""
     }
@@ -23,8 +22,7 @@
       "classType": "Gin",
       "alcoholContent": "47% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Portland",
-      "bottlerState": "OR",
+      "bottlerAddress": "Greenmeadow Distilling Co., Portland, OR",
       "isImported": false,
       "countryOfOrigin": ""
     }
@@ -38,8 +36,7 @@
       "classType": "Kentucky Straight Bourbon Whiskey",
       "alcoholContent": "45% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Bardstown",
-      "bottlerState": "KY",
+      "bottlerAddress": "Pine Ridge Distilling Co., Bardstown, KY",
       "isImported": false,
       "countryOfOrigin": ""
     }
@@ -53,8 +50,7 @@
       "classType": "Vodka",
       "alcoholContent": "40% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Lewiston",
-      "bottlerState": "ID",
+      "bottlerAddress": "Glacier Peak Spirits, LLC, Lewiston, ID",
       "isImported": false,
       "countryOfOrigin": ""
     }
@@ -68,13 +64,11 @@
       "classType": "Pineapple Rum Punch",
       "alcoholContent": "7.0% Alc./Vol.",
       "netContents": "355 mL",
-      "bottlerCity": "San Diego",
-      "bottlerState": "CA",
+      "bottlerAddress": "Island Escape Spirits Co., San Diego, CA",
       "isImported": false,
       "countryOfOrigin": ""
     }
-  }
-  ,
+  },
   {
     "id": "elevateLabel",
     "expectedResult": "review",
@@ -84,8 +78,7 @@
       "classType": "Gin",
       "alcoholContent": "42% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Denver",
-      "bottlerState": "CO",
+      "bottlerAddress": "Elevate Spirits, LLC Denver, Colorado",
       "isImported": false,
       "countryOfOrigin": ""
     }
@@ -99,13 +92,11 @@
       "classType": "Vodka",
       "alcoholContent": "40% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Seattle",
-      "bottlerState": "WA",
+      "bottlerAddress": "North Coast Spirits, LLC, Seattle, WA",
       "isImported": false,
       "countryOfOrigin": ""
     }
-  }
-  ,
+  },
   {
     "id": "sunsetVibesLabel",
     "expectedResult": "fail",
@@ -115,28 +106,25 @@
       "classType": "Hard Seltzer",
       "alcoholContent": "10% Alc. by Vol.",
       "netContents": "355 mL",
-      "bottlerCity": "Miami",
-      "bottlerState": "FL",
+      "bottlerAddress": "Sunset Vibes Beverage CO. Miami, FL",
       "isImported": false,
       "countryOfOrigin": ""
     }
   },
   {
     "id": "highlandLegacyLabel",
-    "expectedResult": "review",
+    "expectedResult": "fail",
     "reasonForResult": "The front label displays 'ULTRA PREMIUM' and 'SIPPED BY CONNOISSEURS WORLDWIDE', both of which are unsubstantiated superlatives that cannot be objectively proven, falling under TTB's UNVERIFIABLE/MISLEADING QUALITY restricted claim category.",
     "applicationData": {
       "brandName": "Highland Legacy",
       "classType": "Bourbon Whiskey",
       "alcoholContent": "45% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Seattle",
-      "bottlerState": "WA",
+      "bottlerAddress": "HIGHLAND LEGACY DISTILLING CO. BARDSTOWN, KENTUCKY",
       "isImported": false,
       "countryOfOrigin": ""
     }
-  }
-  ,
+  },
   {
     "id": "bellaVistaLabel",
     "expectedResult": "fail",
@@ -146,8 +134,7 @@
       "classType": "Toscana Rosso",
       "alcoholContent": "13.5% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Napa",
-      "bottlerState": "CA",
+      "bottlerAddress": "Vino Imports USA, Napa, CA",
       "isImported": true,
       "countryOfOrigin": "Italy"
     }
@@ -161,8 +148,7 @@
       "classType": "Tequila Blanco",
       "alcoholContent": "40% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "New York",
-      "bottlerState": "NY",
+      "bottlerAddress": "Sierra Verde Spirits, LLC, Dallas, TX",
       "isImported": true,
       "countryOfOrigin": "Mexico"
     }
@@ -176,8 +162,7 @@
       "classType": "Toscana Rosso",
       "alcoholContent": "13.5% Alc. by Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Miami",
-      "bottlerState": "FL",
+      "bottlerAddress": "Soleterra imports, Miami, FL",
       "isImported": true,
       "countryOfOrigin": "Italy"
     }
@@ -191,8 +176,7 @@
       "classType": "Toscana IGT",
       "alcoholContent": "13.5% Alc. by Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Miami",
-      "bottlerState": "FL",
+      "bottlerAddress": "Vivere Imports, LLC, Miami, FL",
       "isImported": true,
       "countryOfOrigin": "Italy"
     }
@@ -206,8 +190,7 @@
       "classType": "Bordeaux",
       "alcoholContent": "13.5% Alc. by Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "New York",
-      "bottlerState": "NY",
+      "bottlerAddress": "Vinum Imports, Inc., New York, NY",
       "isImported": true,
       "countryOfOrigin": "France"
     }
@@ -221,8 +204,7 @@
       "classType": "Blended Scotch Whisky",
       "alcoholContent": "40% Alc./Vol.",
       "netContents": "750 mL",
-      "bottlerCity": "Deerfield",
-      "bottlerState": "IL",
+      "bottlerAddress": "Summit Spirits USA, Inc., Deerfield, IL",
       "isImported": true,
       "countryOfOrigin": "Scotland"
     }

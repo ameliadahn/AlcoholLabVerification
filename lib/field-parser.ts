@@ -10,6 +10,13 @@ export interface ParsedFields {
   netContents: string | null;
   bottlerStatement: string | null;
   governmentWarning: string | null;
+  /**
+   * AI legibility attestation for the government warning.
+   * true  — AI confirmed it read every word from the image pixels.
+   * false — AI attested the warning was absent, blurry, garbled, or otherwise unreadable.
+   * undefined — OCR fallback path; no legibility attestation available.
+   */
+  governmentWarningLegible?: boolean;
   countryOfOrigin: string | null;
   rawText: string;
   /**
@@ -20,41 +27,119 @@ export interface ParsedFields {
 }
 
 const KNOWN_CLASS_TYPES = [
-  "bourbon whiskey",
+  // Whiskey / Whisky
+  "straight bourbon whiskey",
+  "kentucky straight bourbon whiskey",
   "tennessee whiskey",
+  "tennessee straight whiskey",
   "scotch whisky",
+  "blended scotch whisky",
+  "single malt scotch whisky",
   "rye whiskey",
+  "straight rye whiskey",
   "blended whiskey",
   "irish whiskey",
+  "american whiskey",
+  "bourbon whiskey",
   "whiskey",
   "whisky",
+  // Base spirits
   "vodka",
   "rum",
   "gin",
+  "london dry gin",
   "brandy",
   "cognac",
+  "armagnac",
+  "pisco",
   "tequila",
+  "blanco tequila",
   "mezcal",
+  // Liqueurs
   "liqueur",
   "cordial",
   "triple sec",
   "schnapps",
+  "amaro",
+  // Other spirits
   "neutral spirits",
   "grain spirits",
   "distilled spirits",
-  "american whiskey",
+  // Wine
+  "red wine",
+  "white wine",
+  "rosé wine",
+  "rose wine",
+  "sparkling wine",
+  "dessert wine",
+  "port wine",
+  "sherry",
+  "prosecco",
+  "champagne",
+  "bordeaux",
+  "burgundy",
+  "chardonnay",
+  "cabernet sauvignon",
+  "merlot",
+  "pinot noir",
+  "pinot grigio",
+  "sauvignon blanc",
+  "riesling",
+  "malbec",
+  "syrah",
+  "shiraz",
+  "zinfandel",
+  "barolo",
+  "chianti",
+  "rioja",
+  "toscana rosso",
+  "toscana bianco",
+  "toscana",
+  "rosso",
+  "bianco",
+  "rouge",
+  "blanc",
+  "igt",
+  "doc",
+  "docg",
+  "aoc",
+  "wine",
+  // Beer / Malt
+  "beer",
+  "lager",
+  "ale",
+  "india pale ale",
+  "ipa",
+  "stout",
+  "porter",
+  "wheat beer",
+  "pilsner",
+  "sour ale",
+  "malt beverage",
+  "hard seltzer",
+  "hard cider",
+  "cider",
+  // Ready-to-drink
+  "rum punch",
+  "hard lemonade",
+  "hard tea",
 ];
 
-// Matches "40% Alc. by Vol.", "15.5% alcohol by volume", etc.
+// Matches "40% Alc./Vol.", "40% Alc/Vol", "40% ABV", "ALC. 40% BY VOL.", "80 Proof", etc.
 const ALCOHOL_CONTENT_REGEX =
-  /(\d{1,2}(?:\.\d{1,2})?)\s*%\s*(?:alc(?:ohol)?\.?(?:\s+by\s+vol(?:ume)?\.?)?|alcohol\s+by\s+volume)/i;
+  /(\d{1,3}(?:\.\d{1,2})?)\s*%\s*(?:alc(?:ohol)?\.?\s*(?:[/\\]\s*vol(?:ume)?\.?|\s+by\s+vol(?:ume)?\.?)?|alcohol\s+by\s+volume|abv)|alc(?:ohol)?\.?\s*(\d{1,3}(?:\.\d{1,2})?)\s*%\s*(?:by\s+)?vol(?:ume)?\.?/i;
 
 // Matches "750 mL", "1.75 L", "375ml", etc.
 const NET_CONTENTS_REGEX = /(\d{1,4}(?:\.\d{1,2})?)\s*(ml|milliliter|millilitre|l\b|liter|litre)/i;
 
-// Matches "Bottled by ..., City, ST" or "Distilled by ..." or "Imported by ..."
+// Matches single and compound qualifiers: "Bottled by", "Canned by", "Distilled and Bottled by", etc.
+const BOTTLER_QUALIFIER =
+  /(?:bottled|distilled|produced|imported|packaged|rectified|canned|brewed|manufactured)(?:\s+and\s+(?:bottled|distilled|produced|imported|packaged|rectified|canned|brewed|manufactured))?\s+by/i;
+// Captures the qualifier and up to 2 lines following it (company name + city/state line).
+// The (?:\n[^\n]+){0,1} allows the address to span onto the next line when OCR outputs
+// "COMPANY NAME\nCITY, STATE" instead of "COMPANY NAME, CITY, STATE" on one line.
 const BOTTLER_REGEX =
-  /((?:bottled|distilled|produced|imported|packaged|rectified)\s+(?:by|in|at|and\s+bottled\s+by))\s+([^\n,]+(?:,\s*[^\n,]+)*)/i;
+  new RegExp(`(${BOTTLER_QUALIFIER.source})\\s+([^\\n]+(?:\\n[^\\n]+){0,1})`, "i");
 
 // Detects government warning sections (using [\s\S] instead of dotAll 's' flag for broader compat)
 const GOV_WARNING_REGEX =
@@ -64,7 +149,15 @@ const COUNTRY_ORIGIN_REGEX =
   /(?:product\s+of|made\s+in|imported\s+from|distilled\s+in|produced\s+in)\s+([A-Za-z\s]+?)(?:\.|,|\n|$)/i;
 
 export function parseFields(ocrText: string): ParsedFields {
-  const text = ocrText || "";
+  // Strip all panel separator markers injected by the OCR orchestrator before any
+  // field extraction runs.  Handles all observed variants:
+  //   "--- [Panel 1: filename.png] ---"
+  //   "--- [Panel 1] ---"
+  //   "[Panel 1: filename.png]"
+  const text = (ocrText || "")
+    .replace(/(?:---\s*)?\[(?:Panel|Image)\s*\d+[^\]]*\](?:\s*---)?/gi, "")
+    .replace(/\n{3,}/g, "\n\n")   // collapse any blank lines left behind
+    .trim();
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
 
   return {
@@ -96,6 +189,10 @@ function extractBrandName(text: string, lines: string[]): string | null {
     /consumption\s+of/i,
     /net\s+cont/i,
     /\bml\b|\bliter/i,
+    // Panel / image separator markers (defensive — should already be stripped above)
+    /^\[(?:Panel|Image)\s*\d+/i,
+    /^-{2,}/,
+    /\.png|\.jpg|\.jpeg|\.webp/i,
   ];
 
   const classTypePattern = new RegExp(KNOWN_CLASS_TYPES.join("|"), "i");
@@ -124,7 +221,6 @@ function extractClassType(text: string): string | null {
 function extractAlcoholContent(text: string): string | null {
   const match = text.match(ALCOHOL_CONTENT_REGEX);
   if (match) {
-    // Return the matched segment with surrounding context (up to ~25 chars)
     const start = Math.max(0, match.index!);
     const end = Math.min(text.length, start + match[0].length + 5);
     return text.substring(start, end).trim();
@@ -143,12 +239,22 @@ function extractNetContents(text: string): string | null {
 function extractBottlerStatement(text: string): string | null {
   const match = text.match(BOTTLER_REGEX);
   if (match) {
-    return match[0].trim();
+    // Return only the company name and address (group 2), not the qualifying phrase (group 1).
+    // Strip leading OCR artifacts, then join multi-line segments with ", " so that
+    // "GREENMEADOW DISTILLING CO.\nPORTLAND, OREGON" becomes
+    // "GREENMEADOW DISTILLING CO., PORTLAND, OREGON".
+    const content = (match[2] ?? "")
+      .replace(/^[\s|,–—]+/, "")
+      .split(/\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .join(", ");
+    return content || null;
   }
   return null;
 }
 
-function extractGovernmentWarning(text: string): string | null {
+export function extractGovernmentWarning(text: string): string | null {
   // Try to find the full government warning block
   const match = text.match(GOV_WARNING_REGEX);
   if (match) return match[0].trim();

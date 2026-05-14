@@ -59,6 +59,10 @@ export interface ApplicationData {
   bottlerName?: string;
   bottlerCity: string;
   bottlerState: string;
+  /** Optional combined bottler name and address — used for comprehensive bottler matching.
+   *  When provided, takes precedence over bottlerName for validation.
+   *  Example: "Greenmeadow Distilling Co., Portland, OR" */
+  bottlerAddress?: string;
   isImported: boolean;
   countryOfOrigin: string;
 }
@@ -89,6 +93,21 @@ export interface LabelSubmission {
   id: string;
   panels: PanelUpload[];
   status: ProcessingStatus;
+  result?: LabelValidationResult;
+  error?: string;
+}
+
+export type BatchSubmissionStatus = "pending" | "processing" | "complete" | "error";
+
+/** One label in a batch run — folder name acts as the application ID hint */
+export interface BatchLabelSubmission {
+  id: string;
+  /** Folder name or filename prefix used as the application ID */
+  submissionLabel: string;
+  panels: PanelUpload[];
+  status: BatchSubmissionStatus;
+  /** Set from manifest upload; if absent the server uses registry lookup */
+  applicationData?: ApplicationData;
   result?: LabelValidationResult;
   error?: string;
 }

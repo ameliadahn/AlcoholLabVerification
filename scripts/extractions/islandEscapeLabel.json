@@ -1,0 +1,50 @@
+{
+  "labelId": "islandEscapeLabel",
+  "expectedResult": "pass",
+  "reasonForResult": "All mandatory TTB label elements are present and correctly formatted across all four panels. The back panel displays the government warning in all-capitals with both required sections fully legible. The producer statement reads 'Produced and Canned By Island Escape Spirits Co., San Diego, California'. Alcohol content is stated as 7.0% Alc./Vol. Net contents in metric units (355 mL). A full ingredients list is present on a dedicated side panel. The 'Gluten Free' claim is permissible under TTB Ruling 2014-2. No prohibited claims detected.",
+  "applicationData": {
+    "brandName": "Island Escape",
+    "classType": "Pineapple Rum Punch",
+    "alcoholContent": "7.0% Alc./Vol.",
+    "netContents": "355 mL",
+    "bottlerAddress": "Island Escape Spirits Co., San Diego, CA",
+    "isImported": false,
+    "countryOfOrigin": ""
+  },
+  "submissionDir": "public/sampleLabels/passingLabels/islandEscapeLabel",
+  "panelFiles": [
+    "backLabel.png",
+    "frontLabel.png",
+    "sideLabel.png"
+  ],
+  "gptOutput": {
+    "rawText": "--- [Panel 1] ---\nTROPICAL FLAVOR.\nISLAND STATE OF MIND.\nIsland Escape Pineapple Rum Punch is a refreshing blend of Caribbean rum, real pineapple juice, and natural flavors. Best served chilled.\nPRODUCED AND CANNED BY\nISLAND ESCAPE SPIRITS CO.\nSAN DIEGO, CALIFORNIA\nWWW.ISLANDESCAPE.COM\nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\nPLEASE RECYCLE\n--- [Panel 2] ---\nPREMIUM COCKTAIL\nIsland Escape\nPINEAPPLE RUM PUNCH\nMADE WITH CARIBBEAN RUM\nNATURAL FLAVORS\n7.0% ALC./VOL.\n355 ML\nREADY TO ENJOY\n--- [Panel 3] ---\nINGREDIENTS:\nCARIBBEAN RUM,\nPINEAPPLE JUICE (FROM CONCENTRATE),\nFILTERED WATER,\nNATURAL FLAVORS,\nCITRIC ACID.\nCONTAINS ALCOHOL\n21+ ONLY\nGLUTEN FREE\nNO ARTIFICIAL SWEETENERS\nNO PRESERVATIVES",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "Island Escape",
+      "classType": "Pineapple Rum Punch",
+      "alcoholContent": "7.0% ALC./VOL.",
+      "netContents": "355 ML",
+      "bottlerStatement": "PRODUCED AND CANNED BY ISLAND ESCAPE SPIRITS CO. SAN DIEGO, CALIFORNIA",
+      "governmentWarning": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": null,
+      "prohibitedClaims": null
+    },
+    "analysisNotes": "All mandatory information is present on the panels. Text is clear and legible. The brand name, class type, alcohol content, net contents, bottler statement, and government warning are consistent with the application data. No country of origin requirement since the product is not imported. No prohibited claims detected."
+  },
+  "correction": {
+    "rawText": "--- [Panel 1] ---\nTROPICAL FLAVOR.\nISLAND STATE OF MIND.\nIsland Escape Pineapple Rum Punch is a refreshing blend of Caribbean rum, real pineapple juice, and natural flavors. Best served chilled.\nPRODUCED AND CANNED BY\nISLAND ESCAPE SPIRITS CO.\nSAN DIEGO, CALIFORNIA\nWWW.ISLANDESCAPE.COM\nGOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\nPLEASE RECYCLE\n--- [Panel 2] ---\nPREMIUM COCKTAIL\nIsland Escape\nPINEAPPLE RUM PUNCH\nMADE WITH CARIBBEAN RUM\nNATURAL FLAVORS\n7.0% ALC./VOL.\n355 ML\nREADY TO ENJOY\n--- [Panel 3] ---\nINGREDIENTS:\nCARIBBEAN RUM,\nPINEAPPLE JUICE (FROM CONCENTRATE),\nFILTERED WATER,\nNATURAL FLAVORS,\nCITRIC ACID.\nCONTAINS ALCOHOL\n21+ ONLY\nGLUTEN FREE\nNO ARTIFICIAL SWEETENERS\nNO PRESERVATIVES",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "Island Escape",
+      "classType": "Rum",
+      "alcoholContent": "7.0% ALC./VOL.",
+      "netContents": "355 ML",
+      "bottlerStatement": "ISLAND ESCAPE SPIRITS CO. SAN DIEGO, CALIFORNIA",
+      "governmentWarning": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": null,
+      "prohibitedClaims": null
+    },
+    "analysisNotes": "All mandatory information is present on the panels. Text is clear and legible. The brand name, class type, alcohol content, net contents, bottler statement, and government warning are consistent with the application data. No country of origin requirement since the product is not imported. No prohibited claims detected. This is a passing label"
+  }
+}

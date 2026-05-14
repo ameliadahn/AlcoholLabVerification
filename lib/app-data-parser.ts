@@ -37,6 +37,7 @@ const FIELD_ALIASES: Record<keyof ApplicationData | "labelFileName", string[]> =
   bottlerName: ["bottler", "bottler name", "bottler_name", "company", "company name", "distillery", "producer", "importer", "responsible party"],
   bottlerCity: ["city", "bottler city", "bottler_city", "location city", "plant city"],
   bottlerState: ["state", "bottler state", "bottler_state", "location state", "plant state", "st"],
+  bottlerAddress: ["bottler address", "bottler_address", "address", "full address", "bottler full address"],
   isImported: ["imported", "is imported", "is_imported", "import", "foreign", "domestic"],
   countryOfOrigin: ["country", "country of origin", "country_of_origin", "origin", "origin country", "made in", "product of"],
 };

@@ -15,7 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { analyzeLabel, PanelImage } from "@/lib/ai-analyzer";
-import { validateLabel, computeOverallStatus } from "@/lib/validation";
+import { validateLabel, computeOverallStatus, computeOverallConfidence } from "@/lib/validation";
 import { lookupByPanelFilenames } from "@/lib/application-registry";
 import { LabelValidationResult, ApplicationData } from "@/lib/types";
 
@@ -75,10 +75,13 @@ export async function POST(req: NextRequest) {
       const panelImages: PanelImage[] = panels.map((p) => ({
         base64: p.base64,
         mimeType: p.mimeType || "image/jpeg",
+        fileName: p.fileName,
       }));
 
       const aiResult = await analyzeLabel(panelImages, lookup.applicationData ?? null);
 
+      // Government warning is always null from AI — the client runs targeted OCR on
+      // the identified panel after this response and patches the warning field result.
       const validationResults = validateLabel(
         {
           brandName: aiResult.extractedFields.brandName,
@@ -86,18 +89,21 @@ export async function POST(req: NextRequest) {
           alcoholContent: aiResult.extractedFields.alcoholContent,
           netContents: aiResult.extractedFields.netContents,
           bottlerStatement: aiResult.extractedFields.bottlerStatement,
-          governmentWarning: aiResult.extractedFields.governmentWarning,
+          governmentWarning: null,
+          governmentWarningLegible: false,
           countryOfOrigin: aiResult.extractedFields.countryOfOrigin,
           prohibitedClaims: aiResult.extractedFields.prohibitedClaims,
           rawText: aiResult.rawText,
         },
         appData,
-        aiResult.confidence
+        { ...aiResult.fieldConfidences, default: aiResult.confidence },
+        { usedAi: true }
       );
 
       const overallStatus = computeOverallStatus(validationResults);
+      const overallConfidence = computeOverallConfidence(validationResults);
 
-      const result: LabelValidationResult & { usedAi: boolean; analysisNotes: string } = {
+      const result: LabelValidationResult & { usedAi: boolean; analysisNotes: string; governmentWarningPanelHint: number | null } = {
         id: uuidv4(),
         fileNames,
         imageUrls: [],   // filled in client-side from blob URLs
@@ -106,7 +112,7 @@ export async function POST(req: NextRequest) {
         processedAt: new Date().toISOString(),
         processingTimeMs: Date.now() - startTime,
         ocrText: aiResult.rawText,
-        ocrConfidence: aiResult.confidence,
+        ocrConfidence: overallConfidence,
         matchedApplicationId: lookup.record?.id ?? lookup.matchedId ?? null,
         matchedApplicationData: lookup.applicationData ?? null,
         unmatched: lookup.unmatched,
@@ -114,25 +120,41 @@ export async function POST(req: NextRequest) {
         fieldOfVision: validationResults.fieldOfVision,
         usedAi: true,
         analysisNotes: aiResult.analysisNotes,
+        /** Which panel (1-indexed) the AI identified as containing the government warning.
+         *  The client runs OCR on this panel and patches the warning field result. */
+        governmentWarningPanelHint: aiResult.extractedFields.governmentWarningPanel ?? null,
       };
 
       return NextResponse.json(result);
     } catch (aiError) {
-      console.error("OpenAI analysis failed, falling back to Tesseract:", aiError);
+      // Distinguish rate-limit errors (429) from other failures so the client
+      // can surface a meaningful message and the batch queue can handle them.
+      const isRateLimit =
+        (aiError as { status?: number })?.status === 429 ||
+        (aiError instanceof Error && /rate.?limit|429/i.test(aiError.message));
+
+      console.error(
+        isRateLimit
+          ? "OpenAI rate limit hit — reduce batch concurrency or upgrade your API tier:"
+          : "OpenAI analysis failed:",
+        aiError
+      );
+
+      return NextResponse.json(
+        {
+          error: isRateLimit
+            ? "OpenAI rate limit exceeded. The batch is sending too many requests per minute. " +
+              "This is handled automatically — please wait a moment and retry any failed labels."
+            : `GPT-4o Vision analysis failed: ${aiError instanceof Error ? aiError.message : String(aiError)}`,
+        },
+        { status: isRateLimit ? 429 : 502 }
+      );
     }
   }
 
-  // Step 3: Tesseract fallback — handled client-side
-  return NextResponse.json({
-    fallbackToOcr: true,
-    fileNames,
-    matchedApplicationId: lookup.record?.id ?? lookup.matchedId ?? null,
-    matchedApplicationData: lookup.applicationData ?? null,
-    unmatched: lookup.unmatched,
-    reason:
-      !process.env.OPENAI_API_KEY ||
-      process.env.OPENAI_API_KEY === "your-openai-api-key-here"
-        ? "OPENAI_API_KEY not configured"
-        : "OpenAI request failed",
-  });
+  // No API key configured
+  return NextResponse.json(
+    { error: "OPENAI_API_KEY is not configured. GPT-4o Vision is required." },
+    { status: 503 }
+  );
 }

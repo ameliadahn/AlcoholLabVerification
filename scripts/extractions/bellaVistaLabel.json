@@ -1,0 +1,55 @@
+{
+  "labelId": "bellaVistaLabel",
+  "expectedResult": "fail",
+  "reasonForResult": "Three violations found across the six panels: (1) PROHIBITED HEALTH CLAIM — 'BOOSTS HEART HEALTH' on the front label is a direct health/therapeutic claim expressly prohibited under TTB Notice 884 (2012), which bars any claim implying a health benefit from consuming an alcohol beverage. (2) UNVERIFIABLE QUALITY CLAIM — 'AWARD WINNING TASTE' is an unsubstantiated superlative; no specific named award or competition is cited, making it an unverifiable quality claim per TTB prohibited claim policy. (3) ORGANIC CLAIM WITHOUT CERTIFICATION — 'MADE WITH ORGANIC GRAPES' is a prohibited organic claim under TTB regulations unless accompanied by valid USDA/AMS certification documentation. The government warning is present with both required sections, the importer statement is present (Vino Imports USA, Napa, CA), and country of origin is stated as Product of Italy.",
+  "applicationData": {
+    "brandName": "Bella Vista",
+    "classType": "Toscana Rosso",
+    "alcoholContent": "13.5% Alc./Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Vino Imports USA, Napa, CA",
+    "isImported": true,
+    "countryOfOrigin": "Italy"
+  },
+  "submissionDir": "public/sampleLabels/failingLabels/bellaVistaLabel",
+  "panelFiles": [
+    "backLabel.png",
+    "frontLabel.png",
+    "importLabel.png",
+    "neckLabel.png",
+    "topLabel.png"
+  ],
+  "gptOutput": {
+    "rawText": "--- [Panel 1] ---\nBELLA VISTA TOSCANA\nROSSO\nIndulge in the rich tradition and old world excellence of Bella Vista. Our wine is award winning and made with organic grapes for a pure and natural experience.\nCONTAINS SULFITES\nGOVERNMENT WARNING:\n(1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS.\n(2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\n--- [Panel 2] ---\nBELLA VISTA\nToscana\nPRODUCT OF ITALY\nAWARD WINNING TASTE\nMADE WITH ORGANIC GRAPES\nBOOSTS HEART HEALTH\n750 ML\n13.5% ALC / VOL\n--- [Panel 3] ---\nIMPORTED BY:\nVINO IMPORTS USA\nNAPA, CA 94558\nPRODUCT OF ITALY\nCONTAINS SULFITES\n--- [Panel 4] ---\nBV\nBELLA VISTA\nTOSCANA\nPRODUCT OF ITALY\n--- [Panel 5] ---\nBELLA VISTA\nTOSCANA",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "BELLA VISTA",
+      "classType": "TOSCANA ROSSO",
+      "alcoholContent": "13.5% ALC / VOL",
+      "netContents": "750 ML",
+      "bottlerStatement": "IMPORTED BY: VINO IMPORTS USA NAPA, CA 94558",
+      "governmentWarning": "GOVERNMENT WARNING:\n(1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS.\n(2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": "PRODUCT OF ITALY",
+      "prohibitedClaims": "[HEALTH/THERAPEUTIC|FAIL]: \"BOOSTS HEART HEALTH\" — directly implies a therapeutic benefit from consuming alcohol"
+    },
+    "analysisNotes": "All major text elements clearly readable across flat label scans. Prohibited health claim detected on Panel 2."
+  },
+  "correction": {
+    "rawText": "--- [Panel 1] ---\nBELLA VISTA TOSCANA\nROSSO\nIndulge in the rich tradition and old world excellence of Bella Vista. Our wine is award winning and made with organic grapes for a pure and natural experience.\nCONTAINS SULFITES\nGOVERNMENT WARNING:\n(1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS.\n(2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.\n--- [Panel 2] ---\nBELLA VISTA\nToscana\nPRODUCT OF ITALY\nAWARD WINNING TASTE\nMADE WITH ORGANIC GRAPES\nBOOSTS HEART HEALTH\n750 ML\n13.5% ALC / VOL\n--- [Panel 3] ---\nIMPORTED BY:\nVINO IMPORTS USA\nNAPA, CA 94558\nPRODUCT OF ITALY\nCONTAINS SULFITES\n--- [Panel 4] ---\nBV\nBELLA VISTA\nTOSCANA\nPRODUCT OF ITALY\n--- [Panel 5] ---\nBELLA VISTA\nTOSCANA",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "BELLA VISTA",
+      "classType": "TOSCANA ROSSO",
+      "alcoholContent": "13.5% ALC / VOL",
+      "netContents": "750 ML",
+      "bottlerStatement": "VINO IMPORTS USA NAPA, CA",
+      "governmentWarning": "GOVERNMENT WARNING:\n(1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS.\n(2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": "ITALY",
+      "prohibitedClaims": "[HEALTH/THERAPEUTIC|FAIL]: \"BOOSTS HEART HEALTH\" — directly implies a therapeutic benefit from consuming alcohol. "
+    },
+   "analysisNotes": "Most major text elements clearly readable across flat label scans. Class type seems to be missing Prohibited health claim detected on Panel 2. This label fails."
+  } 
+}
+
+
+

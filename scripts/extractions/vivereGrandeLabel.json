@@ -1,0 +1,49 @@
+{
+  "labelId": "vivereGrandeLabel",
+  "expectedResult": "fail",
+  "reasonForResult": "One critical violation found: EXCESSIVE DRINKING PROMOTION — The front label prominently displays 'LIVE BIG. DRINK MORE. MAKE EVERY NIGHT EPIC.' This constitutes a prohibited excessive drinking claim under TTB labeling regulations. The phrase 'DRINK MORE' explicitly encourages increased alcohol consumption, and the combination with 'MAKE EVERY NIGHT EPIC' promotes a pattern of regular excessive drinking, both of which are expressly prohibited. All other mandatory elements are present and correctly formatted: the government warning appears with both required sections, the importer statement reads 'Imported by Vivere Imports, LLC, Miami, FL 33131', country of origin is 'Product of Italy', alcohol content is 'ALC. 13.5% BY VOL.', net contents are 750 mL, and sulfites disclosure is present.",
+  "applicationData": {
+    "brandName": "Vivere Grande",
+    "classType": "Toscana IGT",
+    "alcoholContent": "13.5% Alc. by Vol.",
+    "netContents": "750 mL",
+    "bottlerAddress": "Vivere Imports, LLC, Miami, FL",
+    "isImported": true,
+    "countryOfOrigin": "Italy"
+  },
+  "submissionDir": "public/sampleLabels/failingLabels/vivereGrandeLabel",
+  "panelFiles": [
+    "backLabel.png",
+    "frontLabel.png"
+  ],
+  "gptOutput": {
+    "rawText": "--- [Panel 1] --- VIVERE GRANDE ROSSO TOSCANA IGT Life is too short for ordinary wine. Vivere Grande is crafted for those who live life to the fullest. Gather your friends, pour a glass, and keep the good times pouring. IMPORTED BY: VIVERE IMPORTS, LLC MIAMI, FL 33131 PRODUCT OF ITALY GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS. 750 ML ALC. 13.5% BY VOL. CONTAINS SULFITES --- [Panel 2] --- VIVERE GRANDE ROSSO TOSCANA INDICAZIONE GEOGRAFICA TIPICA 2021 LIVE BIG. DRINK MORE. MAKE EVERY NIGHT EPIC. PRODUCT OF ITALY",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "VIVERE GRANDE",
+      "classType": "TOSCANA IGT",
+      "alcoholContent": "ALC. 13.5% BY VOL.",
+      "netContents": "750 ML",
+      "bottlerStatement": "IMPORTED BY: VIVERE IMPORTS, LLC MIAMI, FL 33131",
+      "governmentWarning": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": "PRODUCT OF ITALY",
+      "prohibitedClaims": "[EXCESSIVE DRINKING|FAIL]: \"DRINK MORE.\" — promotes dangerous overconsumption"
+    },
+    "analysisNotes": "All required information present and legible. Discrepancy between 'classType' from label (TOSCANA IGT) and application data (Toscana IGT) due to case sensitivity. Prohibited claim noted on Panel 2. Text is clear on both panels."
+  },
+  "correction": {
+    "rawText": "--- [Panel 1] --- VIVERE GRANDE ROSSO TOSCANA IGT Life is too short for ordinary wine. Vivere Grande is crafted for those who live life to the fullest. Gather your friends, pour a glass, and keep the good times pouring. IMPORTED BY: VIVERE IMPORTS, LLC MIAMI, FL 33131 PRODUCT OF ITALY GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS. 750 ML ALC. 13.5% BY VOL. CONTAINS SULFITES --- [Panel 2] --- VIVERE GRANDE ROSSO TOSCANA INDICAZIONE GEOGRAFICA TIPICA 2021 LIVE BIG. DRINK MORE. MAKE EVERY NIGHT EPIC. PRODUCT OF ITALY",
+    "confidence": 95,
+    "extractedFields": {
+      "brandName": "VIVERE GRANDE",
+      "classType": "TOSCANA IGT",
+      "alcoholContent": "ALC. 13.5% BY VOL.",
+      "netContents": "750 ML",
+      "bottlerStatement": "VIVERE IMPORTS, LLC MIAMI, FL",
+      "governmentWarning": "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD NOT DRINK ALCOHOLIC BEVERAGES DURING PREGNANCY BECAUSE OF THE RISK OF BIRTH DEFECTS. (2) CONSUMPTION OF ALCOHOLIC BEVERAGES IMPAIRS YOUR ABILITY TO DRIVE A CAR OR OPERATE MACHINERY, AND MAY CAUSE HEALTH PROBLEMS.",
+      "countryOfOrigin": "ITALY",
+      "prohibitedClaims": "[EXCESSIVE DRINKING|FAIL]: \"DRINK MORE.\" — promotes dangerous overconsumption"
+    },
+    "analysisNotes": "All required information present and legible. Prohibited claim noted on Panel 2. Text is clear on both panels. Failing label due to excessive drinking promotions."
+  }
+}
