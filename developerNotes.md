@@ -45,3 +45,7 @@ Since this is a prototype, I prioritized functionality first and planned to addr
 Assumptions
 
 The system assumes label images are photographs or scans at a resolution Tesseract can read, and that application data is available as a structured file, a document photo, or manual entry. It does not assume integration with COLAs Online or any TTB backend. Label dimensions, font sizes, and color contrast are out of scope as that information was not reliably available in the application data.
+
+Trade-offs
+
+Several key tradeoffs shaped the project. Accuracy was prioritized over speed, Claude Haiku was chosen over faster alternatives because it produced better extraction results, even though individual processing times couldn't consistently hit the 5-second target some reviewers expected. The batch processing time lowered overall time spent per label to about 2.5 seconds. Fine-tuning was considered but deprioritized in favor of prompt engineering and OCR integration, which offered faster iteration. For batch workflows, AI-based application data extraction was disabled to reduce cost and processing time, replaced with CSV import instead. And rather than build toward full COLAs Online integration, the system was kept self-contained as a prototype, trading integration depth for faster delivery and a cleaner separation of concerns.
