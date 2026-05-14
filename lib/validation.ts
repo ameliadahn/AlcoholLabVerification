@@ -743,17 +743,7 @@ export function validateGovernmentWarning(
   // capitalization or spacing differences in the body text do not count as violations.
   // Only the "GOVERNMENT WARNING:" header must be in all capitals (checked above).
   const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  const normExtracted = normalize(extracted);
-  const normRequired = normalize(REQUIRED_WARNING);
-
-  // Compare both the full extracted text AND a prefix-truncated version.
-  // Labels often have additional text immediately after "health problems." (allergen
-  // statements, bottler address, barcodes). This extra content is not the bottler's
-  // fault — the required warning IS complete. Using the better of the two scores
-  // ensures trailing non-warning text does not cause a false fail.
-  const prefixSim = similarity(normExtracted.substring(0, normRequired.length), normRequired);
-  const fullSim = similarity(normExtracted, normRequired);
-  const sim = Math.max(prefixSim, fullSim);
+  const sim = similarity(normalize(extracted), normalize(REQUIRED_WARNING));
 
   // AI path (governmentWarningLegible === true): require 95% — AI self-checked every word.
   // OCR path (governmentWarningLegible === undefined): 85% threshold — Tesseract can introduce
