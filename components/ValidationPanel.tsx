@@ -173,10 +173,6 @@ export default function ValidationPanel({
             Processed in <strong>{(result.processingTimeMs / 1000).toFixed(1)}s</strong>
           </span>
         </div>
-        {result.analysisNotes && (
-          <p className="text-xs text-gray-500 italic">{result.analysisNotes}</p>
-        )}
-
         {/* Panel thumbnails strip — sits below the heading so it never squeezes the title */}
         {result.imageUrls.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1">

@@ -37,22 +37,81 @@ const FIELD_ALIASES: Record<keyof ApplicationData | "labelFileName", string[]> =
   bottlerName: ["bottler", "bottler name", "bottler_name", "company", "company name", "distillery", "producer", "importer", "responsible party"],
   bottlerCity: ["city", "bottler city", "bottler_city", "location city", "plant city"],
   bottlerState: ["state", "bottler state", "bottler_state", "location state", "plant state", "st"],
-  bottlerAddress: ["bottler address", "bottler_address", "address", "full address", "bottler full address"],
-  isImported: ["imported", "is imported", "is_imported", "import", "foreign", "domestic"],
+  bottlerAddress: ["bottler address", "bottler_address", "address", "full address", "bottler full address", "bottler location", "bottler_location", "location", "plant location", "facility location"],
+  isImported: ["imported", "is imported", "is_imported", "import", "foreign", "domestic", "imported product", "imported_product", "is domestic", "domestic product"],
   countryOfOrigin: ["country", "country of origin", "country_of_origin", "origin", "origin country", "made in", "product of"],
 };
 
 function normalizeKey(raw: string): string {
-  return raw.trim().toLowerCase().replace(/[^a-z0-9 _]/g, "");
+  return raw.trim().toLowerCase().replace(/[^a-z0-9 _]/g, "").replace(/\s+/g, " ");
 }
+
+/**
+ * Normalize a brand name for fuzzy matching against folder names.
+ * Strips common industry suffixes so "Bella Vista Vineyards" → "bellavista".
+ */
+function normalizeBrandForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(
+      /\b(vineyards?|winery|wineries|distillery|distilleries|brewing|brewery|brewhouse|spirits?|cellars?|estates?|wines?|company|co\.?|inc\.?|llc\.?|ltd\.?)\b/g,
+      ""
+    )
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+/**
+ * Normalize a submission label (folder name) for matching against brand names.
+ * Strips "label(s)", status words (pass/fail/review), and industry suffixes so
+ * e.g. "vistaLunaLabelPass" → "vistaluna" and "bellaVistaLabel" → "bellavista".
+ */
+function normalizeSubmissionLabelForMatch(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\b(labels?|pass|fail|review|passing|failing|approved|rejected)\b/g, "")
+    .replace(
+      /\b(vineyards?|winery|wineries|distillery|distilleries|brewing|brewery|brewhouse|spirits?|cellars?|estates?|wines?|company|co\.?|inc\.?|llc\.?|ltd\.?)\b/g,
+      ""
+    )
+    .replace(/[^a-z0-9]/g, "")
+    .trim();
+}
+
+// Keyword fallback: if exact alias matching fails, check whether the normalized
+// header *contains* a defining keyword.  Ordered most-specific → least-specific
+// to avoid mis-mapping (e.g. "bottler name" must resolve to bottlerName, not brandName).
+const FIELD_KEYWORDS: Array<[keyof ApplicationData | "labelFileName", string[]]> = [
+  ["isImported",      ["import"]],
+  ["alcoholContent",  ["alcohol", "abv", "proof"]],
+  ["countryOfOrigin", ["country", "origin"]],
+  ["bottlerAddress",  ["bottler location", "plant location", "facility location"]],
+  ["bottlerCity",     ["bottler city", "plant city", "city"]],
+  ["bottlerState",    ["bottler state", "plant state", "state"]],
+  ["bottlerName",     ["bottler", "distillery", "brewery", "winery", "producer", "importer", "responsible party"]],
+  ["netContents",     ["net content", "net volume", "bottle size", "container size", "net quantity"]],
+  ["classType",       ["class", "designation", "varietal", "spirit type", "product type", "beverage type"]],
+  ["brandName",       ["brand", "trade name", "product name"]],
+  ["labelFileName",   ["filename", "file name", "label file", "image file", "label image"]],
+];
 
 function resolveColumn(header: string): keyof ApplicationData | "labelFileName" | null {
   const norm = normalizeKey(header);
+
+  // 1. Exact alias match
   for (const [field, aliases] of Object.entries(FIELD_ALIASES)) {
     if (aliases.some((a) => normalizeKey(a) === norm)) {
       return field as keyof ApplicationData | "labelFileName";
     }
   }
+
+  // 2. Keyword / substring fallback
+  for (const [field, keywords] of FIELD_KEYWORDS) {
+    if (keywords.some((kw) => norm.includes(normalizeKey(kw)))) {
+      return field;
+    }
+  }
+
   return null;
 }
 
@@ -92,6 +151,19 @@ function rowToRecord(
       record.isImported = parseBool(val);
     } else {
       (record as unknown as Record<string, unknown>)[field] = String(val).trim();
+    }
+  }
+
+  // If a combined "Bottler Location" / address was captured but city/state are still empty,
+  // try to split "City, State" (e.g. "Napa, California" or "Lawrenceburg, KY") automatically.
+  const combinedAddress = (record as unknown as Record<string, unknown>).bottlerAddress as string | undefined;
+  if (combinedAddress && (!record.bottlerCity || !record.bottlerState)) {
+    const parts = combinedAddress.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      if (!record.bottlerCity) record.bottlerCity = parts[0];
+      if (!record.bottlerState) record.bottlerState = parts.slice(1).join(", ");
+    } else if (parts.length === 1 && !record.bottlerCity) {
+      record.bottlerCity = parts[0];
     }
   }
 
@@ -334,10 +406,16 @@ export async function parseApplicationDataFile(file: File): Promise<AppDataParse
 }
 
 /**
- * Given a list of parsed records and a list of label filenames,
- * returns a record matched to each label. If the file has one record,
- * it is applied to all labels. If it has multiple records, they are
- * matched by labelFileName column first, then by position.
+ * Given a list of parsed records and a list of label submission names (folder names),
+ * returns a record matched to each label.
+ *
+ * Matching priority:
+ *   1. Explicit `filename` column in the manifest (exact key match)
+ *   2. Brand name match — normalized brand name vs normalized folder name
+ *      (strips industry suffixes from brand; strips "label" suffix from folder)
+ *
+ * Throws if any two records share the same normalized brand name, since the
+ * match would be ambiguous.
  */
 export function matchRecordsToLabels(
   records: ParsedApplicationRecord[],
@@ -351,18 +429,50 @@ export function matchRecordsToLabels(
     return labelFileNames.map(() => ({ ...records[0] }));
   }
 
+  // ── Duplicate brand name check ────────────────────────────────────────────
+  const brandNormCounts = new Map<string, string[]>();
+  for (const record of records) {
+    const norm = normalizeBrandForMatch(record.brandName);
+    if (!norm) continue;
+    const existing = brandNormCounts.get(norm) ?? [];
+    existing.push(record.brandName || "(blank)");
+    brandNormCounts.set(norm, existing);
+  }
+  const duplicates = [...brandNormCounts.entries()]
+    .filter(([, names]) => names.length > 1)
+    .map(([, names]) => names.join(" / "));
+  if (duplicates.length > 0) {
+    throw new Error(
+      `Duplicate brand names in manifest — each brand must be unique. ` +
+        `Duplicates found: ${duplicates.join("; ")}`
+    );
+  }
+
+  // ── Build brand-name lookup index ─────────────────────────────────────────
+  const brandIndex = new Map<string, ParsedApplicationRecord>();
+  for (const record of records) {
+    const norm = normalizeBrandForMatch(record.brandName);
+    if (norm) brandIndex.set(norm, record);
+  }
+
   return labelFileNames.map((labelName, i) => {
-    // Try to match by labelFileName column
-    const byName = records.find(
+    // 1. Explicit filename column
+    const byFileName = records.find(
       (r) => r.labelFileName && normalizeKey(r.labelFileName) === normalizeKey(labelName)
     );
-    if (byName) return { ...byName };
+    if (byFileName) return { ...byFileName };
 
-    // Fall back to positional match
+    // 2. Brand name substring match against folder name
+    const normLabel = normalizeSubmissionLabelForMatch(labelName);
+    const byBrand = brandIndex.get(normLabel) ??
+      // Also try substring: brand norm contained within the folder norm
+      [...brandIndex.entries()].find(([brand]) => normLabel.includes(brand))?.[1];
+    if (byBrand) return { ...byBrand };
+
+    // 3. Positional fallback — Record 1 → Label 1, Record 2 → Label 2, etc.
     if (i < records.length) return { ...records[i] };
 
-    // If more labels than records, use the last record
-    return { ...records[records.length - 1] };
+    return emptyApplicationData();
   });
 }
 

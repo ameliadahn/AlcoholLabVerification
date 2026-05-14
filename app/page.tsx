@@ -189,7 +189,7 @@ export default function HomePage() {
 
   const proceedToBatchManifest = () => setBatchStep("manifest");
 
-  const BATCH_LIMIT = 10;
+  const BATCH_LIMIT = 15;
 
   const startBatchProcessing = () => {
     // Cap at BATCH_LIMIT — take the first N submissions in the queue.
@@ -723,6 +723,7 @@ export default function HomePage() {
                     <AppDataImporter
                       labelCount={detectedSubmissions.length}
                       onImport={(records) => setManifestRecords(records)}
+                      onClear={() => setManifestRecords(null)}
                     />
                   </div>
 

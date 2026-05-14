@@ -1,9 +1,0 @@
-{
-  "jobId": "ftjob-DiLK4oUZfhu5ZzVk1Tt1sjtR",
-  "trainingFileId": "file-Qw724XCafkwPrXyXNQ3yZo",
-  "baseModel": "gpt-4o-2024-08-06",
-  "suffix": "ttb-reviewer",
-  "status": "validating_files",
-  "submittedAt": "2026-05-14T03:41:55.561Z",
-  "fineTunedModel": null
-}

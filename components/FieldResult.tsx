@@ -35,17 +35,9 @@ const fieldColors = {
 
 function ConfidencePill({ confidence }: { confidence: number }) {
   const pct = Math.round(confidence);
-  let colorClass: string;
-  if (pct >= 80) {
-    colorClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
-  } else if (pct >= 60) {
-    colorClass = "bg-amber-100 text-amber-700 border-amber-200";
-  } else {
-    colorClass = "bg-red-100 text-red-700 border-red-200";
-  }
   return (
     <span
-      className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded border ${colorClass}`}
+      className="inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded border bg-transparent text-gray-500 border-gray-300"
       title="Field confidence score"
     >
       <span className="tabular-nums">{pct}%</span>
@@ -90,41 +82,40 @@ export default function FieldResult({ result }: FieldResultProps) {
 
       <p className="mt-2 text-sm text-gray-700">{result.message}</p>
 
-      {/* Prohibited claims — always visible when claims are detected, no expand needed */}
-      {hasParsedClaims && (
-        <div className="mt-3 space-y-2">
-          {parsedClaims.map((c, i) => (
-            <div key={i} className="flex flex-col gap-0.5 text-xs rounded border bg-white px-3 py-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${
-                  c.severity === "FAIL"
-                    ? "bg-red-100 text-red-700 border border-red-200"
-                    : "bg-amber-100 text-amber-700 border border-amber-200"
-                }`}>
-                  {c.severity}
-                </span>
-                <span className="font-semibold text-gray-700">{c.category}</span>
-                <span className="italic text-gray-800">&ldquo;{c.claim}&rdquo;</span>
-              </div>
-              <p className="text-gray-500 leading-snug">{c.reason}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Unparseable claims fallback — show raw extractedValue inline so it's never hidden */}
-      {isClaimsField && !hasParsedClaims && result.extractedValue && result.status !== "pass" && (
-        <div className="mt-3 text-xs">
-          <span className="font-semibold text-gray-600">Extracted from label:</span>
-          <span className="ml-2 font-mono bg-white px-1.5 py-0.5 rounded border text-gray-800 break-all">
-            {result.extractedValue}
-          </span>
-        </div>
-      )}
-
       {expanded && (
         <div className="mt-3 space-y-2 border-t border-gray-200 pt-3">
-          {/* For prohibited claims, extractedValue is already shown inline above */}
+          {/* Prohibited claims — shown on expand */}
+          {hasParsedClaims && (
+            <div className="space-y-2">
+              {parsedClaims.map((c, i) => (
+                <div key={i} className="flex flex-col gap-0.5 text-xs rounded border bg-white px-3 py-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wide ${
+                      c.severity === "FAIL"
+                        ? "bg-red-100 text-red-700 border border-red-200"
+                        : "bg-amber-100 text-amber-700 border border-amber-200"
+                    }`}>
+                      {c.severity}
+                    </span>
+                    <span className="font-semibold text-gray-700">{c.category}</span>
+                    <span className="italic text-gray-800">&ldquo;{c.claim}&rdquo;</span>
+                  </div>
+                  <p className="text-gray-500 leading-snug">{c.reason}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Unparseable claims fallback */}
+          {isClaimsField && !hasParsedClaims && result.extractedValue && result.status !== "pass" && (
+            <div className="text-xs">
+              <span className="font-semibold text-gray-600">Extracted from label:</span>
+              <span className="ml-2 font-mono bg-white px-1.5 py-0.5 rounded border text-gray-800 break-all">
+                {result.extractedValue}
+              </span>
+            </div>
+          )}
+
           {result.extractedValue && !isClaimsField && (
             <div className="text-xs">
               <span className="font-semibold text-gray-600">Extracted from label:</span>

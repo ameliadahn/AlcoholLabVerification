@@ -8,6 +8,7 @@ import { ApplicationData } from "@/lib/types";
 interface AppDataImporterProps {
   labelCount: number;
   onImport: (records: ParsedApplicationRecord[]) => void;
+  onClear?: () => void;
 }
 
 const ACCEPTED_FORMATS = {
@@ -39,7 +40,7 @@ const FIELD_DISPLAY: { key: keyof ApplicationData; label: string }[] = [
   { key: "countryOfOrigin", label: "Country of Origin" },
 ];
 
-export default function AppDataImporter({ labelCount, onImport }: AppDataImporterProps) {
+export default function AppDataImporter({ labelCount, onImport, onClear }: AppDataImporterProps) {
   const [parsing, setParsing] = useState(false);
   const [result, setResult] = useState<AppDataParseResult | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -59,6 +60,9 @@ export default function AppDataImporter({ labelCount, onImport }: AppDataImporte
       const parsed = await parseApplicationDataFile(file);
       setResult(parsed);
       setActiveRow(0);
+      if (parsed.records.length) {
+        onImport(parsed.records);
+      }
     } catch (err) {
       setError(`Failed to parse file: ${err}`);
     } finally {
@@ -73,16 +77,11 @@ export default function AppDataImporter({ labelCount, onImport }: AppDataImporte
     disabled: parsing,
   });
 
-  const handleConfirm = () => {
-    if (result?.records.length) {
-      onImport(result.records);
-    }
-  };
-
   const clearImport = () => {
     setResult(null);
     setFileName(null);
     setError(null);
+    onClear?.();
   };
 
   const displayRecord = result?.records[activeRow];
@@ -222,7 +221,9 @@ export default function AppDataImporter({ labelCount, onImport }: AppDataImporte
               <div className="divide-y divide-gray-100">
                 {FIELD_DISPLAY.map(({ key, label }) => {
                   const val = displayRecord[key];
-                  const isEmpty = val === "" || val === false || val === undefined || val === null;
+                  const isEmpty = key === "isImported"
+                    ? val === undefined || val === null
+                    : val === "" || val === false || val === undefined || val === null;
                   return (
                     <div key={key} className="flex items-center px-4 py-2.5 gap-4">
                       <span className="w-36 shrink-0 text-xs font-semibold text-gray-500">{label}</span>

@@ -97,10 +97,13 @@ REVIEW SEVERITY — requires human verification
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [MISLEADING QUALITY CLAIM|REVIEW]
-Absolute superlatives or exaggerated quality claims that assert objective superiority without a verifiable source.
-  ❌ "World's Smoothest Bourbon" — absolute quality superlative, unverifiable
-  ❌ "Perfect Every Time" — absolute performance claim
-  ✅ "Exceptionally smooth" / "Our finest blend" — subjective/relative, not an absolute assertion — do NOT flag
+Absolute superlatives or comparative rankings that assert objective superiority or being the best without a verifiable source. This category is ONLY for claims that position the product above all others or declare it the best/top/number-one in its category.
+  ❌ "World's Smoothest Bourbon" — absolute ranking superlative, asserts superiority over all others
+  ❌ "The Best Gin in America" — objective best claim with no named verification source
+  ❌ "Perfect Every Time" — absolute performance claim asserting no product is better
+  ❌ "#1 Rated Vodka" — ranking claim with no named source
+  ✅ "Exceptionally smooth" / "Our finest blend" / "smooth, rich flavor" / "warm finish" / "rich and complex" — sensory and flavor descriptions, not comparative rankings — do NOT flag
+  ✅ Any description of how the product tastes, smells, or feels (smooth, crisp, bold, warm, rich, velvety, etc.) — these are NEVER misleading quality claims, regardless of how glowing the language is
 
 [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]
 Any award, medal, ranking, or accolade claim that does not name a specific identifiable competition/awarding body and year.
@@ -133,7 +136,7 @@ Nutrient-content claims without the required "statement of average analysis" or 
 DO NOT FLAG — standard industry language
 ━━━━━━━━━━━━━━━━━━━━━━━━━
 - Production process descriptors: "Small Batch," "Handcrafted," "Craft," "Artisan," "Pot Still," "Single Malt," "Barrel Aged," "Cask Strength," "Distilled X Times," "Aged X Years in [barrel type]," "Limited Edition," "Reserve," "Single Barrel"
-- Sensory and flavor language: "smooth," "crisp," "clean finish," "rich," "complex," "bold," "robust," "velvety," "refined," "nuanced," "smooth finish," "lingering finish," "exceptional clarity," "exceptional purity," "pure," "purity" — these describe taste/texture and distillation quality, not health
+- Sensory and flavor language — NEVER flag these regardless of context: "smooth," "crisp," "clean finish," "rich," "complex," "bold," "robust," "velvety," "refined," "nuanced," "smooth finish," "warm finish," "lingering finish," "rich flavor," "smooth, rich flavor," "warm, lingering finish," "exceptional clarity," "exceptional purity," "pure," "purity," "full-bodied," "silky," "mellow," "bright," "lush," "rounded," "well-balanced," "approachable," "easy-drinking" — these describe taste, texture, aroma, and distillation quality; they are NOT quality ranking claims and must never be flagged under MISLEADING QUALITY CLAIM or any other category
 - Subjective quality adjectives with no objective assertion: "premium," "superior," "fine," "exceptional," "ultra," "world-class" — these are standard puffery
 - Truthful origin statements about the product's actual location: "Distilled in Kentucky" (for a Kentucky product), "Brewed in Colorado" (for a Colorado product)
 - Fanciful/humorous brand names or taglines that make no objective claim: "Sandy Beaches Rum," "Your Mom's Favorite Vodka"
@@ -186,7 +189,20 @@ CRITICAL — NO METADATA IN FIELD VALUES: The panel separator markers you write 
 - classType: Extract the FULL designation including all descriptive modifiers (e.g. "STRAIGHT BOURBON WHISKEY," "DISTILLED LONDON DRY GIN," "India Pale Ale"). "IPA" alone is insufficient — it must be qualified or treated as a fanciful name.
 - alcoholContent: Extract verbatim even if non-standard (e.g. "40 ABV" or "80 Proof"). When the statement includes a proof value in parentheses (e.g. "40% ALC./VOL. (80 Proof)"), extract the COMPLETE statement including the closing parenthesis — never truncate mid-expression at an open parenthesis.
 - netContents: Extract verbatim including or excluding the unit as printed. TTB requires metric (mL or L); imperial-only is non-compliant.
-- bottlerStatement: Extract ONLY the company name and address — do NOT include the qualifying phrase ("Bottled by", "Distilled by", "Imported by", "Canned by", etc.) in the value. The qualifying phrase tells you WHERE to look; the value must be just the name and location. Combine across line breaks if needed. Example: if the label shows "DISTILLED AND BOTTLED BY" on line 1, "GREENMEADOW DISTILLING CO." on line 2, and "PORTLAND, OREGON" on line 3, the correct extraction is "GREENMEADOW DISTILLING CO. PORTLAND, OREGON". Stopping at the company name without the city and state is a critical extraction error.
+- bottlerStatement: Extract the name and address of the entity that PHYSICALLY BOTTLED OR PRODUCED the product — the bottler, distiller, winery, or brewer. Extract ONLY the company name and address, without the qualifying phrase. Combine across line breaks if needed. Example: "DISTILLED AND BOTTLED BY" / "GREENMEADOW DISTILLING CO." / "PORTLAND, OREGON" → "GREENMEADOW DISTILLING CO. PORTLAND, OREGON". Stopping at the company name without the city and state is a critical extraction error.
+
+  BOTTLER vs. IMPORTER — these are two distinct entities; do NOT substitute one for the other:
+  - The BOTTLER/PRODUCER is the winery, distillery, or brewery that physically made or packaged the product. Their statement appears after qualifiers like "Bottled by", "Distilled by", "Brewed by", "Produced by", or foreign equivalents like "MIS EN BOUTEILLE PAR", "EMBOUTEILLÉ PAR", "IMBOTTIGLIATO DA".
+  - The US IMPORTER is the American company that brought the product into the country. Their statement appears after "Imported by". The importer is a SEPARATE compliance element and must NOT be extracted as the bottlerStatement.
+
+  When a label shows BOTH a foreign-language producer statement AND an English "Imported by [US company]" statement (common on imported wines with a US sticker):
+  → Extract the PRODUCER (e.g., "CHÂTEAU LA ROCHE, BLAYE, FRANCE") as bottlerStatement — NOT the US importer.
+  → Record the importer text in analysisNotes (e.g., "Importer statement found: IMPORTED BY VINUM IMPORTS, INC. NEW YORK, NY 10016").
+
+  When a label shows ONLY an "Imported by [US company, US address]" statement with no separate producer statement:
+  → Extract the importer as bottlerStatement (it is the sole responsible-party statement).
+
+  If the producer/bottler qualifier is in a non-English language (e.g., "MIS EN BOUTEILLE PAR"), extract the company name and address verbatim and add to analysisNotes: "BOTTLER STATEMENT IN NON-ENGLISH LANGUAGE: [full qualifier phrase as printed]".
 - governmentWarning: Always return null. The government warning text is extracted and verified independently by OCR — do not attempt to read, transcribe, or guess it.
 - governmentWarningLegible: Always return false. The government warning is handled by OCR, not by this analysis.
 - governmentWarningPanel: Look at all submitted panels and identify which one contains the "GOVERNMENT WARNING:" fine-print block (typically a dense paragraph of small text near the bottom of the back panel). Return the 1-indexed panel number (e.g. 1 for the first image, 2 for the second). Return null if you cannot locate the warning block on any panel.
@@ -217,10 +233,21 @@ A foreign-language origin phrase (e.g. "PRODOTTO IN ITALIA", "Produit de France"
 D. PROCESS CLAIMS, SENSORY CLAIMS, AND AWARD CLAIMS — calibrate carefully
 Routine production and sensory language is standard industry practice and must NOT be flagged (see DO NOT FLAG list above). Only flag claims that make a specific assertion requiring external verification.
 
+  CRITICAL DISTINCTION for quality claims:
+  - Sensory / taste descriptions are ALWAYS permitted — they describe the drinking experience, not objective rankings. Examples that must NEVER be flagged: "smooth, rich flavor with a warm finish," "crisp and refreshing," "bold and complex," "velvety texture," "mellow and approachable," "rich and full-bodied." No matter how positive these sound, they are not compliance issues.
+  - REVIEW is only warranted when a claim asserts the product IS the best, IS #1, or HAS WON something without proof. Ask: "Is this claiming superiority over other products, or just describing how this product tastes?" If it's describing taste/texture/aroma → do NOT flag.
+
   Flag for REVIEW — unverifiable award or ranking claims:
     [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]: "Awarded #1 Vodka in America" — award claim with no named competition
     [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]: "Gold Medal Winner" — award claim with no named competition or year
     [UNVERIFIABLE AWARD/RECOGNITION|REVIEW]: "World's Best Gin" — superlative ranking with no named award source
+    [MISLEADING QUALITY CLAIM|REVIEW]: "The World's Smoothest Bourbon" — asserts objective superiority over all other bourbons
+    [MISLEADING QUALITY CLAIM|REVIEW]: "America's Finest Whiskey" — asserts objective national ranking
+
+  Do NOT flag for REVIEW — sensory descriptions, even glowing ones:
+    ✅ "smooth, rich flavor with a warm finish" — describes taste and mouthfeel, no ranking claim
+    ✅ "exceptionally smooth" — subjective sensory descriptor
+    ✅ "our finest blend" — relative to the brand's own lineup, not an objective ranking claim
 
   Flag as FAIL — clear TTB violations:
     [HEALTH/THERAPEUTIC|FAIL]: "Boosts Heart Health" — explicit health benefit claim
@@ -302,7 +329,14 @@ Application data on file for comparison:
 - Class/Type: ${appData.classType || "(not provided)"}
 - Alcohol Content: ${appData.alcoholContent || "(not provided)"}
 - Net Contents: ${appData.netContents || "(not provided)"}
-- Bottler/Importer: ${appData.bottlerAddress ?? (appData.bottlerName ? `${appData.bottlerName}, ${appData.bottlerCity || ""}, ${appData.bottlerState || ""}` : `${appData.bottlerCity || ""}, ${appData.bottlerState || ""}`)}
+- Bottler/Importer: ${(() => {
+  const addr = appData.bottlerAddress?.trim();
+  const name = appData.bottlerName?.trim();
+  if (addr && name && !addr.toLowerCase().includes(name.toLowerCase())) return `${name}, ${addr}`;
+  if (addr) return addr;
+  if (name) return [name, appData.bottlerCity, appData.bottlerState].filter(Boolean).join(", ");
+  return [appData.bottlerCity, appData.bottlerState].filter(Boolean).join(", ") || "(not provided)";
+})()}
 - Is Imported: ${appData.isImported ? "Yes" : "No"}
 - Country of Origin: ${appData.countryOfOrigin || "N/A"}
 
@@ -420,7 +454,8 @@ export async function analyzeApplicationDocument(
   const block = response.content[0];
   if (!block || block.type !== "text") throw new Error("Claude returned an empty response.");
 
-  const parsed = JSON.parse(block.text);
+  const rawContent = block.text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const parsed = JSON.parse(rawContent);
 
   return {
     applicationData: {
