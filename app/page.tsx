@@ -74,6 +74,7 @@ export default function HomePage() {
   const [batchStep, setBatchStep] = useState<BatchStep>("upload");
   const [detectedSubmissions, setDetectedSubmissions] = useState<BatchLabelSubmission[]>([]);
   const [manifestRecords, setManifestRecords] = useState<ParsedApplicationRecord[] | null>(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
   const { submissions: queueSubmissions, isRunning, stats, startBatch, abortBatch, resetBatch, applyOverride } =
     useBatchQueue();
 
@@ -190,17 +191,27 @@ export default function HomePage() {
   const BATCH_LIMIT = 15;
 
   const startBatchProcessing = () => {
+    setBatchError(null);
     // Cap at BATCH_LIMIT — take the first N submissions in the queue.
     let submissionsToRun = detectedSubmissions.slice(0, BATCH_LIMIT);
 
-    // Attach applicationData from the uploaded manifest records.
-    if (manifestRecords && manifestRecords.length > 0) {
-      const labels = submissionsToRun.map((s) => s.submissionLabel);
-      const appDataList = matchRecordsToLabels(manifestRecords, labels);
-      submissionsToRun = submissionsToRun.map((s, i) => ({
-        ...s,
-        applicationData: appDataList[i],
-      }));
+    try {
+      // Attach applicationData from the uploaded manifest records.
+      if (manifestRecords && manifestRecords.length > 0) {
+        const labels = submissionsToRun.map((s) => s.submissionLabel);
+        const appDataList = matchRecordsToLabels(manifestRecords, labels);
+        submissionsToRun = submissionsToRun.map((s, i) => ({
+          ...s,
+          applicationData: appDataList[i],
+        }));
+      }
+    } catch (err) {
+      setBatchError(
+        err instanceof Error
+          ? err.message
+          : "Failed to match manifest records to labels. Please check your spreadsheet."
+      );
+      return;
     }
 
     setBatchStep("processing");
@@ -680,6 +691,12 @@ export default function HomePage() {
                       onClear={() => setManifestRecords(null)}
                     />
                   </div>
+
+                  {batchError && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                      {batchError}
+                    </div>
+                  )}
 
                   <button
                     onClick={startBatchProcessing}

@@ -57,14 +57,28 @@ export async function POST(req: NextRequest) {
   const fileNames = panels.map((p) => p.fileName);
 
   // Step 1: Resolve application data — prefer manually supplied data over registry lookup.
-  const lookup = manualApplicationData
-    ? {
-        record: null,
-        applicationData: manualApplicationData,
-        matchedId: "manual" as string | null,
-        unmatched: false,
-      }
-    : lookupByPanelFilenames(fileNames);
+  let lookup: ReturnType<typeof lookupByPanelFilenames> | {
+    record: null;
+    applicationData: ApplicationData;
+    matchedId: string | null;
+    unmatched: boolean;
+  };
+  try {
+    lookup = manualApplicationData
+      ? {
+          record: null,
+          applicationData: manualApplicationData,
+          matchedId: "manual" as string | null,
+          unmatched: false,
+        }
+      : lookupByPanelFilenames(fileNames);
+  } catch (registryErr) {
+    console.error("Application registry lookup failed:", registryErr);
+    return NextResponse.json(
+      { error: "Failed to load application registry. Please try again." },
+      { status: 503 }
+    );
+  }
 
   const appData: ApplicationData = lookup.applicationData ?? EMPTY_APP_DATA;
 
@@ -135,8 +149,8 @@ export async function POST(req: NextRequest) {
 
       console.error(
         isRateLimit
-          ? "OpenAI rate limit hit — reduce batch concurrency or upgrade your API tier:"
-          : "OpenAI analysis failed:",
+          ? "Anthropic rate limit hit — reduce batch concurrency or upgrade your API tier:"
+          : "Anthropic analysis failed:",
         aiError
       );
 

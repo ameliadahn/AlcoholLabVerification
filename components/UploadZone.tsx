@@ -81,7 +81,7 @@ export default function UploadZone({ onFilesAdded, disabled }: UploadZoneProps) 
   const { onDrop: rzOnDrop, ...restRootProps } = getRootProps();
 
   const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLDivElement>) => {
+    (e: React.DragEvent<HTMLElement>) => {
       setShowChoice(false);
       const items = Array.from(e.dataTransfer?.items ?? []);
       const dirItem = items.find((item) => item.webkitGetAsEntry?.()?.isDirectory);
@@ -94,7 +94,7 @@ export default function UploadZone({ onFilesAdded, disabled }: UploadZoneProps) 
           if (files.length > 0) onFilesAdded(files, entry.name);
         });
       } else {
-        rzOnDrop?.(e as unknown as React.DragEvent);
+        rzOnDrop?.(e);
       }
     },
     [onFilesAdded, rzOnDrop]

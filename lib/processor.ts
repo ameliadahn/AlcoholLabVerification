@@ -178,7 +178,9 @@ export async function processSubmission(
     throw err;
   }
 
-  const data = await response.json();
+  const data = await response.json().catch(() => {
+    throw new Error("Server returned an unexpected response. Please try again.");
+  });
 
   // Claude identified which panel holds the government warning.
   // All other fields are extracted exclusively by Claude — never by OCR.
