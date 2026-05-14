@@ -193,36 +193,57 @@ export async function processSubmission(
   let newOverallStatus = data.overallStatus;
   let newOcrConfidence = data.ocrConfidence;
 
+  // The AI may have successfully read the government warning text directly from the image.
+  // The server ran validation against the AI text; the extractedValue on the result holds
+  // the raw string that was extracted (or null if the AI returned null).
+  const aiWarningText: string | null = data.fields?.governmentWarning?.extractedValue ?? null;
+  // governmentWarningLegible is forwarded from the AI's self-attestation via analysisNotes
+  // or from the field result status — a non-null extractedValue with a non-fail status
+  // means the AI successfully read it.
+  const aiWarningLegible: boolean =
+    aiWarningText !== null && data.fields?.governmentWarning?.status !== "fail";
+
   try {
     // OCR was already running in parallel — await the settled results now.
     // If OCR finished before Claude, this resolves instantly with no extra wait.
     const allOcrResults = await allOcrPromise;
 
-    let ocrWarningText: string | null = null;
-    let ocrWarningConf = 20;
+    let warningText: string | null = null;
+    let warningLegible: boolean | undefined = undefined;
+    let warningConf = 20;
 
-    if (panelIndex !== null) {
-      // Targeted: use the panel Claude identified — result already computed
-      const ocrResult = allOcrResults[panelIndex];
-      ocrWarningText = extractGovernmentWarning(ocrResult.text);
-      ocrWarningConf = scoreOcrWarningConfidence(ocrWarningText, [ocrResult]);
+    if (aiWarningLegible && aiWarningText) {
+      // AI confirmed it read every word — use AI extraction directly.
+      // OCR confidence is scored against the AI text to surface any readability concerns.
+      warningText = aiWarningText;
+      warningLegible = true;
+      warningConf = scoreOcrWarningConfidence(warningText, allOcrResults);
     } else {
-      // No hint — combine all panels to locate the warning
-      const combinedText = allOcrResults
-        .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
-        .join("\n\n");
-      ocrWarningText = extractGovernmentWarning(combinedText);
-      ocrWarningConf = scoreOcrWarningConfidence(ocrWarningText, allOcrResults);
+      // AI couldn't read it (fine print too small) — fall back to Tesseract OCR.
+      let ocrWarningText: string | null = null;
+      if (panelIndex !== null) {
+        const ocrResult = allOcrResults[panelIndex];
+        ocrWarningText = extractGovernmentWarning(ocrResult.text);
+        warningConf = scoreOcrWarningConfidence(ocrWarningText, [ocrResult]);
+      } else {
+        const combinedText = allOcrResults
+          .map((r, i) => `--- [Panel ${i + 1}] ---\n${r.text}`)
+          .join("\n\n");
+        ocrWarningText = extractGovernmentWarning(combinedText);
+        warningConf = scoreOcrWarningConfidence(ocrWarningText, allOcrResults);
+      }
+      warningText = ocrWarningText;
+      warningLegible = undefined; // OCR path — no legibility attestation
     }
 
-    const ocrParsedFields: ParsedFields = {
+    const warningParsedFields: ParsedFields = {
       brandName: null, classType: null, alcoholContent: null,
       netContents: null, bottlerStatement: null,
-      governmentWarning: ocrWarningText,
-      governmentWarningLegible: undefined,
+      governmentWarning: warningText,
+      governmentWarningLegible: warningLegible,
       countryOfOrigin: null, rawText: "", prohibitedClaims: null,
     };
-    govWarnResult = validateGovernmentWarning(ocrParsedFields, ocrWarningConf);
+    govWarnResult = validateGovernmentWarning(warningParsedFields, warningConf);
 
     const fovParsedFields: ParsedFields = {
       brandName: data.fields?.brandName?.extractedValue ?? null,
@@ -230,8 +251,8 @@ export async function processSubmission(
       alcoholContent: data.fields?.alcoholContent?.extractedValue ?? null,
       netContents: null,
       bottlerStatement: null,
-      governmentWarning: ocrWarningText,
-      governmentWarningLegible: undefined,
+      governmentWarning: warningText,
+      governmentWarningLegible: warningLegible,
       countryOfOrigin: null,
       rawText: data.ocrText ?? "",
       prohibitedClaims: null,

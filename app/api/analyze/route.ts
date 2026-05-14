@@ -79,8 +79,9 @@ export async function POST(req: NextRequest) {
 
       const aiResult = await analyzeLabel(panelImages, lookup.applicationData ?? null);
 
-      // Government warning is always null from AI — the client runs targeted OCR on
-      // the identified panel after this response and patches the warning field result.
+      // Pass the AI's government warning text through to validation.
+      // When the AI returned null (fine print too small), the client-side OCR will
+      // run in parallel and patch the warning field result after this response arrives.
       const validationResults = validateLabel(
         {
           brandName: aiResult.extractedFields.brandName,
@@ -88,8 +89,8 @@ export async function POST(req: NextRequest) {
           alcoholContent: aiResult.extractedFields.alcoholContent,
           netContents: aiResult.extractedFields.netContents,
           bottlerStatement: aiResult.extractedFields.bottlerStatement,
-          governmentWarning: null,
-          governmentWarningLegible: false,
+          governmentWarning: aiResult.extractedFields.governmentWarning,
+          governmentWarningLegible: aiResult.extractedFields.governmentWarningLegible,
           countryOfOrigin: aiResult.extractedFields.countryOfOrigin,
           prohibitedClaims: aiResult.extractedFields.prohibitedClaims,
           rawText: aiResult.rawText,

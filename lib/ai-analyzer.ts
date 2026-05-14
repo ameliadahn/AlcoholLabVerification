@@ -203,8 +203,8 @@ CRITICAL — NO METADATA IN FIELD VALUES: The panel separator markers you write 
   → Extract the importer as bottlerStatement (it is the sole responsible-party statement).
 
   If the producer/bottler qualifier is in a non-English language (e.g., "MIS EN BOUTEILLE PAR"), extract the company name and address verbatim and add to analysisNotes: "BOTTLER STATEMENT IN NON-ENGLISH LANGUAGE: [full qualifier phrase as printed]".
-- governmentWarning: Always return null. The government warning text is extracted and verified independently by OCR — do not attempt to read, transcribe, or guess it.
-- governmentWarningLegible: Always return false. The government warning is handled by OCR, not by this analysis.
+- governmentWarning: Read the government warning block character-by-character from the image pixels. Return the full text exactly as printed when you can read every word with certainty. Return null if the block is blurry, too small to read, or if you cannot confirm every word from the pixels alone (see Section A below for detailed rules).
+- governmentWarningLegible: true if you returned the full warning text and confirmed every word by visual inspection; false if you returned null because the text was unreadable, absent, or required guessing any word.
 - governmentWarningPanel: Look at all submitted panels and identify which one contains the "GOVERNMENT WARNING:" fine-print block (typically a dense paragraph of small text near the bottom of the back panel). Return the 1-indexed panel number (e.g. 1 for the first image, 2 for the second). Return null if you cannot locate the warning block on any panel.
 - countryOfOrigin: For imported products only. TTB/CBP standard is "Product of [Country]." Return null if not present on any panel.
 
@@ -212,13 +212,14 @@ CRITICAL — NO METADATA IN FIELD VALUES: The panel separator markers you write 
 EDGE CASES AND EXAMPLES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-A. BLURRY OR GARBLED GOVERNMENT WARNING — return null, never reconstruct
-The government warning must be read character-by-character from the image pixels. If the body text is blurry, low-contrast, too small to read clearly, garbled/jumbled, or requires guessing any word — return null regardless of how much of it you can partially make out. Do NOT fill in words you cannot clearly see even if you know the standard wording.
-  ✗ Wrong: "governmentWarning": "GOVERNMENT WARNING: (1) According to the Surgeon General..." ← filled in from memory/training even though text was blurry or jumbled
-  ✗ Wrong: Seeing garbled or jumbled characters in the warning area and returning the standard wording anyway because "it must be the government warning"
-  ✓ Right: "governmentWarning": null, "governmentWarningLegible": false, analysisNotes: "Government warning present on Panel 2 but text is fine print — could not read every word from pixels with certainty."
-  ✓ Right: "governmentWarning": null, "governmentWarningLegible": false, analysisNotes: "Warning area visible on Panel 1 but text appears as garbled/jumbled characters — not readable."
-  ✓ Also right: Return the full text only when you have read every single word character-by-character from the pixels with zero doubt about any character, and confirmed in the self-check (Step 4) that you did not recall it from memory.
+A. GOVERNMENT WARNING — read what you can see; return null only for genuinely unreadable images
+If you can read the government warning text in the image pixels — even if the font is small — read it and return it. Return null ONLY if the text is physically impossible to read (e.g. the image is blurry, overexposed, or the text is obscured). A clear photo where the fine print is small but legible IS readable — do not return null just because the text is small.
+  ✗ Wrong: Returning null for a clear photo just because the government warning is small-font fine print
+  ✗ Wrong: Returning null and saying "image quality too poor" when the text is actually legible in the image
+  ✗ Wrong: Returning the standard wording from memory when you cannot actually see the pixels clearly (hallucination)
+  ✓ Right: Read the warning text from the image and return it when you can see it clearly, even if the font is small
+  ✓ Right: "governmentWarning": null, "governmentWarningLegible": false, analysisNotes: "Warning area visible but text is blurry/overexposed — cannot read individual characters."
+  ✓ Right: Return the full text only when you are reading from the actual visible pixels — not from memory of what the warning typically says.
 
 B. CROSS-PANEL ABV NUMBER CONFLICT — flag in analysisNotes
 When multiple panels show the alcohol content and the numeric values differ by more than 0.5%, note the conflict explicitly in analysisNotes. Different abbreviation styles for the same number are NOT a conflict ("40% Alc./Vol." and "40% Alcohol by Volume" are identical; "40% Alc./Vol." and "46% Alc./Vol." are a conflict). Extract the value from the most prominent panel as alcoholContent, but always flag the numeric discrepancy.
@@ -281,7 +282,7 @@ Return ONLY a valid JSON object with this exact structure:
     "alcoholContent": <0–100: readability of the alcohol content statement>,
     "netContents": <0–100: readability of the net contents statement>,
     "bottlerStatement": <0–100: readability of the bottler/importer name and address>,
-    "governmentWarning": 0,
+    "governmentWarning": <0–100: readability of the government warning text — 0 if null was returned>,
     "countryOfOrigin": <0–100: readability of the country of origin statement; use 100 for domestic products where it is not required>,
     "prohibitedClaims": <0–100: confidence that all marketing claims have been screened — lower if some text was unclear>
   },
@@ -291,8 +292,8 @@ Return ONLY a valid JSON object with this exact structure:
     "alcoholContent": "<alcohol content statement exactly as printed (e.g. '40% Alc. by Vol.' or '40 ABV'), or null>",
     "netContents": "<net contents exactly as printed (e.g. '750 mL' or '750'), or null>",
     "bottlerStatement": "<full bottler/importer/brewer statement exactly as printed including qualifying verb and city/state, or null>",
-    "governmentWarning": null,
-    "governmentWarningLegible": false,
+    "governmentWarning": "<full government warning text exactly as printed, or null if unreadable — see governmentWarning field rules above>",
+    "governmentWarningLegible": <true if you read every word from the pixels with certainty, false if null was returned>,
     "governmentWarningPanel": <1-indexed panel number where the "GOVERNMENT WARNING:" fine-print block is located, or null if not found on any panel>,
     "countryOfOrigin": "<country of origin exactly as printed for imported products (e.g. 'PRODUCT OF ENGLAND'), or null>",
     "prohibitedClaims": "<pipe-separated list of ALL detected violations across ALL panels in format '[CATEGORY|SEVERITY]: \\"exact claim text\\" — reason'; CATEGORY is one of HEALTH/THERAPEUTIC, INTOXICATION/EXCESSIVE DRINKING, ORGANIC WITHOUT CERTIFICATION, FALSE GEOGRAPHIC/PRODUCTION, OBSCENE/OFFENSIVE/ILLEGAL, MISLEADING QUALITY CLAIM, UNVERIFIABLE AWARD/RECOGNITION, MISLEADING HEALTH IMPLICATION, MISLEADING OVERALL IMPRESSION, MISLEADING NUTRIENT; SEVERITY is FAIL or REVIEW; null if none detected after scanning all panels>"
@@ -568,8 +569,14 @@ export async function analyzeLabel(
   const generalConf = typeof parsed.confidence === "number" ? parsed.confidence : 75;
   const pfc = parsed.fieldConfidences ?? {};
 
-  // Government warning is always null from AI — OCR handles this field client-side.
-  // The confidence is always 0 here; the OCR path patches it after this call returns.
+  // Pass through the AI's government warning text (or null if it couldn't read it).
+  // The client-side OCR runs in parallel and will be used as a fallback when AI returns null.
+  const aiGovWarning = sanitize(parsed.extractedFields?.governmentWarning);
+  const aiGovWarningLegible = parsed.extractedFields?.governmentWarningLegible === true;
+  // If AI read the warning, use its self-reported confidence; otherwise 0 (OCR will patch it).
+  const govWarningConf = aiGovWarningLegible && typeof pfc.governmentWarning === "number"
+    ? pfc.governmentWarning
+    : 0;
 
   const fieldConfidences = {
     brandName:         typeof pfc.brandName         === "number" ? pfc.brandName         : generalConf,
@@ -577,7 +584,7 @@ export async function analyzeLabel(
     alcoholContent:    typeof pfc.alcoholContent    === "number" ? pfc.alcoholContent    : generalConf,
     netContents:       typeof pfc.netContents       === "number" ? pfc.netContents       : generalConf,
     bottlerStatement:  typeof pfc.bottlerStatement  === "number" ? pfc.bottlerStatement  : generalConf,
-    governmentWarning: 0,
+    governmentWarning: govWarningConf,
     // Domestic products don't require a country of origin — absence is a rule-based
     // pass, not a readability issue, so confidence is 100% when not imported.
     countryOfOrigin: parsed.extractedFields?.countryOfOrigin == null && !appData?.isImported
@@ -587,8 +594,9 @@ export async function analyzeLabel(
     // solely by whether the AI found claim markers, not by the confidence level.
     prohibitedClaims: typeof pfc.prohibitedClaims === "number" ? pfc.prohibitedClaims : generalConf,
   };
-  // Overall confidence = weakest AI-read field. Government warning is excluded because
-  // it is always 0 by design (OCR handles it) and must not drag down the AI's overall score.
+  // Government warning is excluded from the overall confidence floor because when AI
+  // returns null (OCR fallback path) its confidence is 0 by design and must not drag
+  // down the overall score for other fields.
   const { governmentWarning: _gw, ...aiOnlyConfidences } = fieldConfidences;
   const overallConfidence = Math.min(...Object.values(aiOnlyConfidences));
 
@@ -602,9 +610,8 @@ export async function analyzeLabel(
       alcoholContent: sanitize(parsed.extractedFields?.alcoholContent),
       netContents: sanitize(parsed.extractedFields?.netContents),
       bottlerStatement: sanitize(parsed.extractedFields?.bottlerStatement),
-      // AI always returns null for the warning — OCR handles this field client-side.
-      governmentWarning: null,
-      governmentWarningLegible: false,
+      governmentWarning: aiGovWarning,
+      governmentWarningLegible: aiGovWarningLegible,
       governmentWarningPanel: typeof parsed.extractedFields?.governmentWarningPanel === "number"
         ? parsed.extractedFields.governmentWarningPanel
         : null,

@@ -58,7 +58,6 @@ function isFormValid(d: ApplicationData, govWarnConfirmed: boolean): boolean {
 export default function HomePage() {
   // ── Shared state ────────────────────────────────────────────────────────────
   const [appMode, setAppMode] = useState<AppMode>("single");
-  const [isDemoMode, setIsDemoMode] = useState(true);
 
   // ── Single-label state ───────────────────────────────────────────────────────
   const [singleStep, setSingleStep] = useState<SingleStep>("upload");
@@ -127,8 +126,7 @@ export default function HomePage() {
 
   const runVerification = () => {
     if (panels.length === 0) return;
-    if (!isDemoMode) { setSingleStep("appdata"); return; }
-    startSingleProcessing();
+    setSingleStep("appdata");
   };
 
   const startSingleProcessing = useCallback(
@@ -195,8 +193,8 @@ export default function HomePage() {
     // Cap at BATCH_LIMIT — take the first N submissions in the queue.
     let submissionsToRun = detectedSubmissions.slice(0, BATCH_LIMIT);
 
-    // In manifest mode, attach applicationData from parsed records
-    if (!isDemoMode && manifestRecords && manifestRecords.length > 0) {
+    // Attach applicationData from the uploaded manifest records.
+    if (manifestRecords && manifestRecords.length > 0) {
       const labels = submissionsToRun.map((s) => s.submissionLabel);
       const appDataList = matchRecordsToLabels(manifestRecords, labels);
       submissionsToRun = submissionsToRun.map((s, i) => ({
@@ -235,29 +233,18 @@ export default function HomePage() {
 
   const effectiveStatus = result?.reviewerOverride?.status ?? result?.overallStatus;
 
-  const singleAllSteps = isDemoMode
-    ? ([
-        { key: "upload", label: "Upload Panels" },
-        { key: "processing", label: "Verify" },
-        { key: "results", label: "Review Results" },
-      ] as const)
-    : ([
-        { key: "upload", label: "Upload Panels" },
-        { key: "appdata", label: "Application Data" },
-        { key: "processing", label: "Verify" },
-        { key: "results", label: "Review Results" },
-      ] as const);
+  const singleAllSteps = [
+    { key: "upload", label: "Upload Panels" },
+    { key: "appdata", label: "Application Data" },
+    { key: "processing", label: "Verify" },
+    { key: "results", label: "Review Results" },
+  ] as const;
 
-  const batchAllSteps = isDemoMode
-    ? ([
-        { key: "upload", label: "Upload Labels" },
-        { key: "processing", label: "Process Batch" },
-      ] as const)
-    : ([
-        { key: "upload", label: "Upload Labels" },
-        { key: "manifest", label: "Application Data" },
-        { key: "processing", label: "Process Batch" },
-      ] as const);
+  const batchAllSteps = [
+    { key: "upload", label: "Upload Labels" },
+    { key: "manifest", label: "Application Data" },
+    { key: "processing", label: "Process Batch" },
+  ] as const;
 
   const currentSingleStepIdx = singleAllSteps.findIndex((s) => s.key === singleStep);
   const currentBatchStepIdx = batchAllSteps.findIndex((s) => s.key === batchStep);
@@ -306,26 +293,6 @@ export default function HomePage() {
                   {m === "single" ? "Single Label" : "Batch"}
                 </button>
               ))}
-            </div>
-
-            {/* Demo mode toggle */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">Demo</span>
-              <button
-                onClick={() => {
-                  setIsDemoMode((v) => !v);
-                  resetSingle();
-                  resetBatchFlow();
-                }}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none
-                  ${isDemoMode ? "bg-blue-600" : "bg-gray-300"}`}
-                title={isDemoMode ? "Demo mode on" : "Manual entry mode"}
-              >
-                <span
-                  className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform
-                    ${isDemoMode ? "translate-x-4.5" : "translate-x-0.5"}`}
-                />
-              </button>
             </div>
 
             {showNewSession && (
@@ -416,9 +383,7 @@ export default function HomePage() {
                         onClick={runVerification}
                         className="mt-6 w-full py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition-colors text-base"
                       >
-                        {isDemoMode
-                          ? `Run Verification (${panels.length} panel${panels.length !== 1 ? "s" : ""}) →`
-                          : `Continue to Application Data →`}
+                        Continue to Application Data →
                       </button>
                     </div>
                   )}
@@ -429,12 +394,9 @@ export default function HomePage() {
                         <strong>How it works:</strong> Upload all label panels for one TTB application at once.
                         The system analyzes every surface together in a single AI pass.
                       </div>
-                      {!isDemoMode && (
-                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
-                          <strong>Manual entry mode:</strong> after uploading panels you will fill out the
-                          application data before verification runs.
-                        </div>
-                      )}
+                      <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-800">
+                        After uploading panels you will fill out the application data before verification runs.
+                      </div>
                     </div>
                   )}
                 </div>
@@ -661,23 +623,15 @@ export default function HomePage() {
                       </div>
 
                       <button
-                        onClick={isDemoMode ? startBatchProcessing : proceedToBatchManifest}
+                        onClick={proceedToBatchManifest}
                         className="w-full py-3.5 bg-blue-700 hover:bg-blue-800 text-white font-semibold rounded-xl shadow transition-colors text-base"
                       >
                         {(() => {
                           const count = Math.min(detectedSubmissions.length, BATCH_LIMIT);
                           const label = `${count} label${count !== 1 ? "s" : ""}`;
-                          return isDemoMode
-                            ? `Run Batch Verification (${label}) →`
-                            : `Continue to Application Data (${label}) →`;
+                          return `Continue to Application Data (${label}) →`;
                         })()}
                       </button>
-
-                      {isDemoMode && (
-                        <p className="text-xs text-center text-gray-400">
-                          Demo mode: application data will be looked up from the registry by folder name
-                        </p>
-                      )}
                     </div>
                   )}
 

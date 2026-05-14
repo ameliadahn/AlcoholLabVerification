@@ -141,9 +141,13 @@ const BOTTLER_QUALIFIER =
 const BOTTLER_REGEX =
   new RegExp(`(${BOTTLER_QUALIFIER.source})\\s+([^\\n]+(?:\\n[^\\n]+){0,1})`, "i");
 
-// Detects government warning sections (using [\s\S] instead of dotAll 's' flag for broader compat)
+// Detects the government warning block starting at "GOVERNMENT WARNING" and running through
+// the end of the second mandatory section. The end anchor accepts several OCR variants:
+// "health problems", "HEALTH PROBLEMS.", "health prob-\nlems", or just a reasonable length
+// of text if the exact closing phrase isn't legible. The regex is intentionally permissive
+// so that OCR line-break artifacts and minor mis-reads don't cause the block to be lost.
 const GOV_WARNING_REGEX =
-  /GOVERNMENT\s+WARNING\s*[:.]?\s*([\s\S]*?(?:\(1\)[\s\S]*?\(2\)[\s\S]*?(?:health problems|problems\.?)))/i;
+  /GOVERNMENT\s+WARNING\s*[:.]?\s*[\s\S]{20,800}?(?:health\s+problems?\.?|\(2\)[\s\S]{5,300})/i;
 
 const COUNTRY_ORIGIN_REGEX =
   /(?:product\s+of|made\s+in|imported\s+from|distilled\s+in|produced\s+in)\s+([A-Za-z\s]+?)(?:\.|,|\n|$)/i;
@@ -255,15 +259,36 @@ function extractBottlerStatement(text: string): string | null {
 }
 
 export function extractGovernmentWarning(text: string): string | null {
-  // Try to find the full government warning block
-  const match = text.match(GOV_WARNING_REGEX);
+  // Normalise OCR whitespace artifacts: collapse any run of whitespace between
+  // "GOVERNMENT" and "WARNING" to a single space so line-break splits don't
+  // cause the header to be missed. Also collapse intra-word spaces that Tesseract
+  // occasionally inserts (e.g. "GOVERN MENT").
+  const normalised = text
+    .replace(/GOVERN\s+MENT/gi, "GOVERNMENT")
+    .replace(/WARN\s+ING/gi, "WARNING")
+    .replace(/GOVERNMENT\s{2,}WARNING/gi, "GOVERNMENT WARNING");
+
+  // Try the full-block regex on the normalised text first.
+  const match = normalised.match(GOV_WARNING_REGEX);
   if (match) return match[0].trim();
 
-  // Fallback: find if "GOVERNMENT WARNING" appears at all
-  const gwIdx = text.toUpperCase().indexOf("GOVERNMENT WARNING");
+  // Fallback 1: "GOVERNMENT WARNING" is present — grab a generous 500-char window.
+  // 500 chars covers the full required wording (≈ 360 chars) with room for OCR noise.
+  const gwIdx = normalised.toUpperCase().indexOf("GOVERNMENT WARNING");
   if (gwIdx !== -1) {
-    return text.substring(gwIdx, Math.min(text.length, gwIdx + 400)).trim();
+    return normalised.substring(gwIdx, Math.min(normalised.length, gwIdx + 500)).trim();
   }
+
+  // Fallback 2: OCR split the header across lines or garbled it beyond the fixes above.
+  // Look for "GOVT WARNING", "GOV. WARNING", "GOVERNMENT WARN" etc.
+  const fuzzyMatch = normalised.match(/GOV(?:ERN(?:MENT)?)?\.?\s+WARN(?:ING)?/i);
+  if (fuzzyMatch && fuzzyMatch.index !== undefined) {
+    return normalised.substring(
+      fuzzyMatch.index,
+      Math.min(normalised.length, fuzzyMatch.index + 500)
+    ).trim();
+  }
+
   return null;
 }
 

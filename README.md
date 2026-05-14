@@ -41,6 +41,11 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+### Testing
+/public/sampleLabels contains sample data for testing. 
+1. **Batch Label Testing** - Add the batchLabels folder to the Upload Panels page and the sampleCSV.cvc file in the Application Data page.
+2. **Single Label Testing** - Add one of the label folders in the soloLabels folder to the Upload Panels page and the coorisponding file in the applicationFiles folder in the Applicatoin Data page.
+
 ## Workflow
 
 ### Single Label

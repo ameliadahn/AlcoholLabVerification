@@ -8,10 +8,6 @@ AI Model Selection
 
 I originally used GPT-4o because of its strong image analysis capabilities. I later switched to Claude Haiku due to lower cost and faster processing while still maintaining strong accuracy. I also considered Gemini Flash, but accuracy was prioritized over speed.
 
-OCR for Government Warning
-
-Language models tend to auto-complete the mandatory Government Warning text even when it is blurry or missing entirely. To avoid false passes on this field, I decided to rely on Tesseract OCR for Government Warning verification rather than AI extraction. The AI returns null for that field by design, and the client runs Tesseract in parallel, then patches the result before displaying it.
-
 Multi-Panel Support
 
 I originally scoped the system to accept a single image per label submission. After additional research, I updated the workflow to support multiple label images because important information often appears on the back, neck, or side panels. Analyzing all panels as a set produces significantly better results than analyzing each image in isolation.
@@ -39,6 +35,8 @@ I considered fine-tuning a model on TTB label data, and the scripts directory ha
 Performance
 
 One challenge was balancing performance expectations, in the provided interviews some suggested 5–10 minutes per review was typical for a human reviewer, while others said reviewers would abandon any system taking longer than 5 seconds. I focused on making analysis as fast as possible using a faster model, resizing images before upload, and running OCR in parallel with the API call. I was not able to get individual processing down to 5 seconds consistently, but with batch uploads, the time averages about 2.3 seconds per label. I opted for accuracy over speed as one of my tradeoffs.
+
+The accuracy piece was a lot of trial and error. Multi-panel support was added so the model analyzes all panels together rather than in isolation, and a confidence scoring threshold was implemented so low-confidence extractions are flagged or failed automatically rather than passed. 
 
 Infrastructure and Security
 
